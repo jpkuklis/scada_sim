@@ -32,21 +32,32 @@
     .btn-tactile { transition: all 0.08s ease; box-shadow: 0 4px 0 #0f172a, inset 0 1px 0 rgba(255,255,255,0.2); }
     .btn-tactile:active { transform: translateY(3px); box-shadow: 0 1px 0 #0f172a, inset 0 1px 0 rgba(0,0,0,0.4); }
 
+    /* SVG Flow Conduits */
     @keyframes pipeFlow { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
     .pipe-flowing { stroke-dasharray: 8, 8; animation: pipeFlow 0.8s linear infinite; }
     .pipe-danger { stroke-dasharray: 8, 8; animation: pipeFlow 0.3s linear infinite; stroke: #ef4444 !important; }
+    .pipe-steam { stroke-dasharray: 6, 6; animation: pipeFlow 0.5s linear infinite; stroke: #f59e0b !important; }
+    .pipe-elec { stroke-dasharray: 4, 4; animation: pipeFlow 0.2s linear infinite; stroke: #eab308 !important; }
     
+    /* Rotation Physics: Pure center-axis spin */
     @keyframes spinImpeller { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .spin-center {
       animation: spinImpeller 0.6s linear infinite;
       transform-box: fill-box;
       transform-origin: 50% 50%;
     }
+    .spin-slow {
+      animation: spinImpeller 2.0s linear infinite;
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+    }
 
+    /* LED Status Indicators */
     .led-off { background-color: #334155; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); }
     .led-green { background-color: #10b981; box-shadow: 0 0 10px #10b981, inset 0 1px 2px rgba(255,255,255,0.5); }
     .led-amber { background-color: #f59e0b; box-shadow: 0 0 10px #f59e0b, inset 0 1px 2px rgba(255,255,255,0.5); }
     .led-red { background-color: #ef4444; box-shadow: 0 0 10px #ef4444, inset 0 1px 2px rgba(255,255,255,0.5); }
+    .led-cyan { background-color: #06b6d4; box-shadow: 0 0 10px #06b6d4, inset 0 1px 2px rgba(255,255,255,0.5); }
 
     @keyframes glitchRed { 0% { opacity: 0; } 50% { opacity: 0.25; } 100% { opacity: 0; } }
     .attack-glitch { animation: glitchRed 0.8s infinite alternate; }
@@ -61,7 +72,7 @@
 
     .estop-guard { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top center; }
     .estop-guard.open { transform: rotateX(120deg); }
-    .interactive-equip:hover { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6)); transition: filter 0.2s; cursor: pointer; }
+    .interactive-equip:hover { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8)); transition: filter 0.2s; cursor: pointer; }
 
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #090d16; }
@@ -99,14 +110,14 @@
         <div class="flex flex-col">
           <label class="text-[9px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">PROCESS DOMAIN</label>
           <select id="scenario-selector" onchange="switchScenario(this.value)" class="bg-slate-950 border border-slate-700 text-cyan-400 font-tech text-[10px] rounded px-2 py-1 focus:outline-none cursor-pointer">
-            <option value="WATER">Water & Wastewater</option>
-            <option value="CHEM">Chem Batch Synthesis</option>
-            <option value="POWER">HV Power Substation</option>
-            <option value="HVAC">HVAC Building Automation</option>
-            <option value="OIL">Oil & Gas Pipeline</option>
-            <option value="FOOD">Food & Beverage CIP</option>
-            <option value="CLEAN">Cleanroom Fab</option>
-            <option value="DATA">Data Center Power</option>
+            <option value="WATER">1. Water & Wastewater Plant</option>
+            <option value="CHEM">2. Chemical Batch Reactor</option>
+            <option value="POWER">3. HV Power Substation</option>
+            <option value="HVAC">4. HVAC Building Automation</option>
+            <option value="OIL">5. Oil & Gas Pipeline</option>
+            <option value="FOOD">6. Food & Beverage CIP</option>
+            <option value="CLEAN">7. Semiconductor Cleanroom</option>
+            <option value="DATA">8. Data Center Power & CRAC</option>
           </select>
         </div>
 
@@ -179,7 +190,7 @@
           <span id="scenario-title" class="text-[10px] font-mono text-cyan-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800 tracking-wider">WATER & WASTEWATER</span>
         </div>
         
-        <div class="panel-inset rounded relative overflow-hidden bg-slate-950 flex-1 min-h-[380px] flex items-center justify-center p-1" id="svg-container">
+        <div class="panel-inset rounded relative overflow-hidden bg-slate-950 flex-1 min-h-[400px] flex items-center justify-center p-1" id="svg-container">
           <!-- Dynamic SVG Canvas -->
           <svg id="pid-svg" viewBox="0 0 800 420" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
@@ -282,7 +293,7 @@
     </section>
   </main>
 
-  <div id="ctx-menu" class="fixed hidden z-50 bg-slate-900/95 border border-slate-600 rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.8)] py-1 text-[11px] font-mono w-64 text-slate-200 overflow-hidden backdrop-blur-xl">
+  <div id="ctx-menu" class="fixed hidden z-50 bg-slate-900/95 border border-slate-600 rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.9)] py-1 text-[11px] font-mono w-72 text-slate-200 overflow-hidden backdrop-blur-xl">
     <div class="px-3 py-1.5 bg-slate-950 font-tech font-bold border-b border-slate-800 flex justify-between items-center">
       <span class="text-cyan-400">EQUIP COMMANDS</span>
       <span class="text-[9px] text-slate-400 bg-slate-800 px-1.5 rounded">ID: <span id="ctx-eid" class="text-white"></span></span>
@@ -290,7 +301,7 @@
     <div id="ctx-body" class="py-1 divide-y divide-slate-800/60"></div>
   </div>
 
-  <div id="tooltip" class="fixed pointer-events-none z-50 opacity-0 transition-opacity duration-150 bg-slate-900/95 border border-slate-600 rounded p-2.5 shadow-2xl text-[10px] font-mono min-w-[180px] backdrop-blur-md">
+  <div id="tooltip" class="fixed pointer-events-none z-50 opacity-0 transition-opacity duration-150 bg-slate-900/95 border border-slate-600 rounded p-2.5 shadow-2xl text-[10px] font-mono min-w-[200px] backdrop-blur-md">
     <div class="font-tech font-bold text-cyan-400 border-b border-slate-700 pb-1 mb-1 flex justify-between" id="tt-id">
       <span>EQUIPMENT</span><span class="text-[8px] text-slate-500" id="tt-type">DEVICE</span>
     </div>
@@ -308,9 +319,9 @@
   </div>
 
   <div id="diag-modal-bg" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-slate-900 border border-slate-700 rounded-lg max-w-md w-full p-5 shadow-2xl">
+    <div class="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-5 shadow-2xl">
       <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-3">
-        <h3 class="font-tech text-sm font-bold text-cyan-400">🩺 HEALTH DIAGNOSTICS</h3>
+        <h3 class="font-tech text-sm font-bold text-cyan-400" id="diag-modal-title">🩺 HEALTH & VIBRATION DIAGNOSTICS</h3>
         <button onclick="document.getElementById('diag-modal-bg').classList.add('hidden')" class="text-slate-400 hover:text-white">✕</button>
       </div>
       <div id="diag-modal-content" class="text-xs font-mono text-slate-300 space-y-3"></div>
@@ -320,23 +331,22 @@
   <div id="toasts" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
   <script>
-    // System State & Physical Models
     const SCADA = {
       scenario: 'WATER', cmp: 'INTERMEDIATE', mode: 'AUTO',
       estopLatch: false, estopActive: false, underAttack: false,
       failure: false, uptime: 0, trendPaused: false,
-      loto: new Set(), faults: new Set(),
+      loto: new Set(), faults: new Set(), bypassed: new Set(), ramps: {},
       hist: { p1: Array(40).fill(0), p2: Array(40).fill(0), p3: Array(40).fill(0), p4: Array(40).fill(0) },
 
-      // Physics State Models (Complete Mass Conservation & Deadhead Physics)
-      W: { tk1: 100, tk2: 20, p1: false, p2: false, v1: 0, v2: 0, sis: 100, press: 0, flow: 0 },
-      C: { tkA: 90, tkB: 85, rx: 10, p1: false, p2: false, h: false, ag: false, temp: 24, press: 1, vDis: 0 },
-      P: { cbM: true, cb1: true, cb2: false, cbTie: false, load: 45, freq: 60, volt: 13.8 },
-      H: { ch1: false, ct1: false, ah1: false, v1: 0, d1: 0, sTemp: 74, flow: 0 },
-      O: { p1: false, p2: false, v1: 100, tkS: 15, press: 100, flow: 0 },
-      F: { pCIP: false, hx: false, fil: false, tkCIP: 100, tkProd: 50, temp: 20, count: 0 },
-      CL: { f1: false, f2: false, s1: false, diff: 0, part: 500, rh: 45 },
-      D: { crac1: false, crac2: false, ups: true, gen: false, ats: 'UTIL', kw: 1200, sTemp: 80 }
+      // Physics State Models
+      W: { tk1: 85, tk2: 15, tk3: 90, p1: false, p2: false, p3: false, v1: 100, v2: 0, v3: 100, sis: 100, press: 35, flow: 120, turb: 0.2 },
+      C: { tkA: 90, tkB: 85, rx: 20, tkProd: 10, p1: false, p2: false, p3: false, h: false, ag: false, temp: 24, press: 1.0, vDis: 0 },
+      P: { cbM: true, cb1: true, cb2: false, cbTie: false, load: 45, freq: 60.00, volt: 13.8, sf6: 6.2 },
+      H: { ch1: false, ct1: false, ah1: false, p1: false, v1: 80, d1: 30, sTemp: 72, flow: 4500, rh: 48 },
+      O: { p1: false, p2: false, p3: false, v1: 100, esd: 100, tkS: 15, press: 180, flow: 0, vib: 0.1 },
+      F: { pCIP: false, hx: false, fil: false, tkCIP: 95, tkProd: 60, temp: 22, bottleCount: 0, flow: 0 },
+      CL: { f1: false, f2: false, s1: false, diff: 0, part: 450, rh: 42, temp: 68.0 },
+      D: { crac1: false, crac2: false, ups: true, gen: false, ats: 'UTIL', kw: 1150, sTemp: 72, batSoC: 99 }
     };
 
     window.onload = () => {
@@ -345,10 +355,9 @@
       setInterval(tickClock, 1000);
       setInterval(physicsLoop, 200);
       setInterval(telemetryLoop, 1000);
-      log('SYS', 'SCADA Host Controller Booted. Validating all interlocks...', 'INFO');
+      log('SYS', 'SCADA Host Controller Booted. Initializing Purdue Level 2 PLC Interlocks...', 'INFO');
     };
 
-    // --- Core Loops ---
     function tickClock() {
       const d = new Date(); document.getElementById('live-clock').innerText = d.toTimeString().split(' ')[0];
       const hb = document.getElementById('plc-heartbeat-led'); hb.className = (d.getSeconds() % 2 === 0) ? 'w-2.5 h-2.5 rounded-full led-green' : 'w-2.5 h-2.5 rounded-full led-off';
@@ -363,116 +372,115 @@
 
       const c = SCADA.cmp;
       
-      // 1. WATER SCENARIO
+      // 1. WATER & WASTEWATER
       if (SCADA.scenario === 'WATER') {
         let w = SCADA.W;
         let pOn = (w.p1 && !SCADA.faults.has('P-101')) || (c !== 'SIMPLE' && w.p2 && !SCADA.faults.has('P-102'));
         
         if (pOn) {
           if (w.v1 > 0 && w.sis > 0 && w.tk2 < 100 && w.tk1 > 0) {
-            // Normal Flow Math
-            let actualFlow = (w.v1/100) * (w.sis/100) * 120 * (w.p1 && w.p2 ? 1.4 : 1);
+            let actualFlow = (w.v1/100) * (w.sis/100) * 150 * (w.p1 && w.p2 ? 1.5 : 1);
             let transfer = Math.min(actualFlow * 0.01, w.tk1, 100 - w.tk2);
             w.tk1 -= transfer; w.tk2 += transfer;
             w.flow = transfer * 500;
-            w.press = 30 + (w.flow * 0.05) + (Math.random()*2);
+            w.press = 30 + (w.flow * 0.04) + (Math.random()*1.5);
           } else {
-            // Cavitation or Deadheading Physics
             w.flow = 0;
             if (w.tk1 <= 0) {
-              w.press = Math.max(0, w.press - 2); // Pump Cavitating (No source fluid)
+              w.press = Math.max(0, w.press - 3); // Cavitation
             } else if (w.tk2 >= 100 || w.v1 === 0 || w.sis === 0) {
-              w.press += 4; // Deadhead: Pump running against closed valve or full tank
+              w.press += 5; // Deadhead pressure spike
             }
           }
         } else {
-          w.flow = 0; w.press = Math.max(0, w.press - 5);
+          w.flow = 0; w.press = Math.max(0, w.press - 4);
         }
         if (w.press > 180 && !SCADA.failure) triggerFail('Overpressure Rupture in Water Main (Deadhead)');
       }
 
-      // 2. CHEM SCENARIO
+      // 2. CHEM BATCH
       else if (SCADA.scenario === 'CHEM') {
         let chem = SCADA.C;
-        // Conservation of mass: Tanks A/B to Reactor
-        if (chem.p1 && !SCADA.faults.has('P-201A') && chem.tkA > 0 && chem.rx < 100) { chem.tkA -= 0.1; chem.rx += 0.1; }
-        if (c !== 'SIMPLE' && chem.p2 && !SCADA.faults.has('P-201B') && chem.tkB > 0 && chem.rx < 100) { chem.tkB -= 0.1; chem.rx += 0.1; }
+        if (chem.p1 && !SCADA.faults.has('P-201A') && chem.tkA > 0 && chem.rx < 100) { chem.tkA -= 0.12; chem.rx += 0.12; }
+        if (c !== 'SIMPLE' && chem.p2 && !SCADA.faults.has('P-201B') && chem.tkB > 0 && chem.rx < 100) { chem.tkB -= 0.12; chem.rx += 0.12; }
         
-        // Discharge Logic
-        if (chem.vDis > 0 && chem.rx > 0) chem.rx -= (chem.vDis/100) * 0.15;
+        if (chem.vDis > 0 && chem.rx > 0) {
+          let dis = (chem.vDis/100) * 0.2;
+          chem.rx = Math.max(0, chem.rx - dis);
+          chem.tkProd = Math.min(100, chem.tkProd + dis);
+        }
         
-        // Heating Loop Thermodynamics
-        if (chem.h && chem.rx > 0) chem.temp += 0.4; else chem.temp = Math.max(24, chem.temp - 0.1);
-        chem.press = 1.0 + ((chem.temp - 24) * 0.05);
-        if (chem.press > 12 && !SCADA.failure) triggerFail('Reactor Overpressure Explosion (Thermal Runaway)');
+        if (chem.h && chem.rx > 0) chem.temp += 0.45; else chem.temp = Math.max(24, chem.temp - 0.15);
+        chem.press = 1.0 + ((chem.temp - 24) * 0.06);
+        if (chem.press > 14 && !SCADA.failure) triggerFail('Reactor Overpressure Explosion (Thermal Runaway)');
       }
 
-      // 3. POWER SCENARIO
+      // 3. POWER SUBSTATION
       else if (SCADA.scenario === 'POWER') {
         let p = SCADA.P;
         let onlineCap = p.cbM ? 100 : 0;
         let actualLoad = (p.cb1 ? 40 : 0) + ((c!=='SIMPLE' && p.cb2) ? 40 : 0);
         p.load = p.cbM ? actualLoad : 0;
-        p.freq = p.cbM ? (actualLoad > onlineCap ? 59.2 : 60 + (Math.random()-0.5)*0.05) : 0;
+        p.freq = p.cbM ? (actualLoad > onlineCap ? 59.1 : 60 + (Math.random()-0.5)*0.04) : 0;
         p.volt = p.cbM ? 13.8 - (p.load * 0.01) : 0;
       }
 
-      // 4. HVAC SCENARIO
+      // 4. HVAC BAS
       else if (SCADA.scenario === 'HVAC') {
         let h = SCADA.H;
         if (h.ah1 && !SCADA.faults.has('AHU-1')) {
-          h.flow = (h.v1/100) * 8000;
-          let coolPwr = h.ch1 ? 2.0 : 0;
-          h.sTemp = Math.max(55, h.sTemp - coolPwr + 0.2); 
+          h.flow = (h.v1/100) * 8500;
+          let coolPwr = h.ch1 ? 2.5 : 0;
+          h.sTemp = Math.max(54, h.sTemp - coolPwr + 0.3); 
         } else {
-          h.flow = 0; h.sTemp = Math.min(85, h.sTemp + 0.1);
+          h.flow = 0; h.sTemp = Math.min(88, h.sTemp + 0.2);
         }
       }
       
-      // 5. OIL PIPELINE SCENARIO
+      // 5. OIL PIPELINE
       else if (SCADA.scenario === 'OIL') {
         let o = SCADA.O;
         let pOn = (o.p1 && !SCADA.faults.has('P-Main')) || (c!=='SIMPLE' && o.p2);
         if (pOn) {
-          if (o.v1 > 0) {
-            o.flow = (o.v1/100) * 600; o.press = 150 + (o.flow * 0.1); o.tkS = Math.max(5, o.tkS - 0.1);
+          if (o.v1 > 0 && o.esd > 0) {
+            o.flow = (o.v1/100) * 650; o.press = 160 + (o.flow * 0.1); o.tkS = Math.max(5, o.tkS - 0.1);
           } else {
-            o.flow = 0; o.press += 10; // Rapid deadhead spike against blocked valve
-            if (c === 'ADVANCED' && o.press > 300) o.tkS = Math.min(100, o.tkS + 0.5); // Relief opens
+            o.flow = 0; o.press += 12; // Rapid deadhead spike
+            if (c === 'ADVANCED' && o.press > 320) o.tkS = Math.min(100, o.tkS + 0.6); // Relief opens
           }
-        } else { o.flow = 0; o.press = Math.max(50, o.press - 5); }
-        if (o.press > 600 && !SCADA.failure) triggerFail('Oil Pipeline Rupture (Exceeded MAOP)');
+        } else { o.flow = 0; o.press = Math.max(50, o.press - 6); }
+        if (o.press > 650 && !SCADA.failure) triggerFail('Oil Pipeline Rupture (Exceeded MAOP Limit)');
       }
 
-      // 6. FOOD & BEVERAGE SCENARIO
+      // 6. FOOD & BEVERAGE
       else if (SCADA.scenario === 'FOOD') {
         let f = SCADA.F;
-        if (f.hx) f.temp = Math.min(85, f.temp + 0.5); else f.temp = Math.max(20, f.temp - 0.2);
+        if (f.hx) f.temp = Math.min(85, f.temp + 0.6); else f.temp = Math.max(20, f.temp - 0.25);
         if (f.fil && !SCADA.faults.has('M-FIL')) {
-          if (f.tkProd > 0) { f.tkProd -= 0.05; f.count += 1.5; }
+          if (f.tkProd > 0) { f.tkProd -= 0.08; f.bottleCount += 2; }
         }
-        if (f.pCIP && f.tkCIP > 0) f.tkCIP -= 0.02; // CIP cycle consumes fluid
+        if (f.pCIP && f.tkCIP > 0) f.tkCIP -= 0.03;
       }
 
-      // 7. CLEANROOM SCENARIO
+      // 7. CLEANROOM
       else if (SCADA.scenario === 'CLEAN') {
         let cl = SCADA.CL;
         let fanPwr = (cl.f1 ? 1 : 0) + ((c!=='SIMPLE' && cl.f2) ? 1 : 0);
-        cl.diff = fanPwr * 45;
-        if (fanPwr > 0) cl.part = Math.max(10, cl.part - 5); else cl.part = Math.min(2000, cl.part + 10);
+        cl.diff = fanPwr * 50;
+        if (fanPwr > 0) cl.part = Math.max(12, cl.part - 6); else cl.part = Math.min(2200, cl.part + 12);
       }
 
-      // 8. DATA CENTER SCENARIO
+      // 8. DATA CENTER
       else if (SCADA.scenario === 'DATA') {
         let d = SCADA.D;
         let cool = (d.crac1 ? 1 : 0) + ((c!=='SIMPLE' && d.crac2) ? 1 : 0);
         if (d.ups) {
-          d.sTemp = Math.max(68, d.sTemp - (cool * 0.5) + 0.2); 
-          d.kw = 1200 + (cool * 150);
+          d.sTemp = Math.max(65, d.sTemp - (cool * 0.6) + 0.25); 
+          d.kw = 1200 + (cool * 180);
         } else {
-          d.kw = 0; d.sTemp += 0.5;
+          d.kw = 0; d.sTemp += 0.6;
         }
-        if (d.sTemp > 105 && !SCADA.failure) triggerFail('Thermal Runaway in Server Hall (HVAC Failure)');
+        if (d.sTemp > 108 && !SCADA.failure) triggerFail('Thermal Runaway in Server Hall (HVAC CRAC Failure)');
       }
 
       renderSVG();
@@ -480,10 +488,9 @@
 
     function applyStuxnet() {
       const s = SCADA.scenario;
-      // Stuxnet forces logic ON and closes valves/cooling to induce deadheading or thermal runaway
-      if (s === 'WATER') { SCADA.W.p1 = true; SCADA.W.v1 = 0; SCADA.W.press += 5; if(SCADA.W.press > 250) triggerFail('Water Main Rupture (Stuxnet Payload)'); }
-      else if (s === 'CHEM') { SCADA.C.h = true; SCADA.C.vDis = 0; SCADA.C.temp += 1.5; SCADA.C.press += 0.5; if(SCADA.C.press > 15) triggerFail('Reactor Explosion (Stuxnet Payload)'); }
-      else if (s === 'OIL') { SCADA.O.p1 = true; SCADA.O.v1 = 0; SCADA.O.press += 15; if(SCADA.O.press > 700) triggerFail('Pipeline Burst (Stuxnet Payload)'); }
+      if (s === 'WATER') { SCADA.W.p1 = true; SCADA.W.v1 = 0; SCADA.W.press += 6; if(SCADA.W.press > 250) triggerFail('Water Main Rupture (Stuxnet Payload)'); }
+      else if (s === 'CHEM') { SCADA.C.h = true; SCADA.C.vDis = 0; SCADA.C.temp += 1.8; SCADA.C.press += 0.6; if(SCADA.C.press > 16) triggerFail('Reactor Explosion (Stuxnet Payload)'); }
+      else if (s === 'OIL') { SCADA.O.p1 = true; SCADA.O.v1 = 0; SCADA.O.press += 18; if(SCADA.O.press > 720) triggerFail('Pipeline Burst (Stuxnet Payload)'); }
       else triggerFail('Catastrophic Overload (Stuxnet Payload)');
     }
 
@@ -499,24 +506,23 @@
     }
 
     const SvgFactory = {
-      pipe: (d, flow, danger, color) => {
+      pipe: (d, flow, danger, color, type='FLUID') => {
         let c = flow ? (danger ? '#ef4444' : color) : 'transparent';
-        let cl = flow ? (danger ? 'pipe-danger' : 'pipe-flowing') : '';
+        let cl = flow ? (danger ? 'pipe-danger' : (type==='STEAM'?'pipe-steam':(type==='ELEC'?'pipe-elec':'pipe-flowing'))) : '';
         return `<path d="${d}" fill="none" stroke="#1e293b" stroke-width="8" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${c}" stroke-width="4" class="${cl}" stroke-linecap="round"/>`;
       },
       equip: (x, y, id, inner, type) => `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${id}" data-type="${type}">${inner}</g>`,
       
-      // Clean, centered impeller avoiding "flying X's"
       pump: (x, y, id, run, fault, loto) => {
         let col = fault ? '#ef4444' : (run ? '#10b981' : '#475569');
         let spin = (run && !fault) ? 'spin-center' : '';
         return SvgFactory.equip(x, y, id, `
           <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="${col}" stroke-width="2"/>
           <g class="${spin}">
-            <path d="M 0 0 L 0 -10 M 0 0 L 8 5 M 0 0 L -8 5" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
+            <path d="M 0 0 L 0 -11 M 0 0 L 9 6 M 0 0 L -9 6" stroke="${col}" stroke-width="3" stroke-linecap="round"/>
           </g>
           <text x="0" y="28" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
-          ${loto?'<rect x="8" y="-14" width="12" height="16" fill="#ef4444" stroke="#fff"/><text x="14" y="-5" fill="#fff" font-size="5" font-family="monospace" text-anchor="middle">LOTO</text>':''}
+          ${loto?'<rect x="8" y="-14" width="12" height="16" fill="#ef4444" stroke="#fff"/><text x="14" y="-4" fill="#fff" font-size="5" font-family="monospace" text-anchor="middle">LOTO</text>':''}
         `, 'PUMP');
       },
       fan: (x, y, id, run, fault, loto) => {
@@ -525,7 +531,7 @@
         return SvgFactory.equip(x, y, id, `
           <circle cx="0" cy="0" r="16" fill="#0f172a" stroke="${col}" stroke-width="2"/>
           <g class="${spin}">
-            <path d="M -8 -8 L 8 8 M 8 -8 L -8 8" stroke="${col}" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M -9 -9 L 9 9 M 9 -9 L -9 9" stroke="${col}" stroke-width="2.5" stroke-linecap="round"/>
           </g>
           <text x="0" y="28" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
           ${loto?'<rect x="8" y="-14" width="12" height="16" fill="#ef4444" stroke="#fff"/>':''}
@@ -543,14 +549,25 @@
         let fillH = Math.max(0, (lvl/100)*h);
         return SvgFactory.equip(x, y, id, `
           <rect width="${w}" height="${h}" rx="4" fill="#070a12" stroke="#475569" stroke-width="2"/>
-          <rect y="${h-fillH}" width="${w}" height="${fillH}" rx="2" fill="${col}" opacity="0.8"/>
+          <rect y="${h-fillH}" width="${w}" height="${fillH}" rx="2" fill="${col}" opacity="0.85"/>
           <text x="${w/2}" y="-8" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">${id}</text>
           <text x="${w/2}" y="${h/2+4}" fill="#fff" font-size="12" font-family="Share Tech Mono" text-anchor="middle">${lvl.toFixed(1)}%</text>
         `, 'TANK');
       },
       breaker: (x, y, id, closed) => {
         let col = closed ? '#10b981' : '#ef4444';
-        return SvgFactory.equip(x, y, id, `<rect x="-12" y="-8" width="24" height="16" fill="${col}" stroke="#0f172a"/><text x="0" y="20" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${id}</text>`, 'BREAKER');
+        return SvgFactory.equip(x, y, id, `
+          <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#0f172a" stroke="${col}" stroke-width="2"/>
+          <line x1="-8" y1="${closed?0:6}" x2="8" y2="${closed?0:-6}" stroke="${col}" stroke-width="3"/>
+          <text x="0" y="22" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${id}</text>
+        `, 'BREAKER');
+      },
+      transmitter: (x, y, id, val, unit) => {
+        return SvgFactory.equip(x, y, id, `
+          <circle cx="0" cy="0" r="12" fill="#090d16" stroke="#38bdf8" stroke-width="1.5"/>
+          <text x="0" y="-3" fill="#38bdf8" font-size="7" font-family="Orbitron" text-anchor="middle">${id}</text>
+          <text x="0" y="6" fill="#fff" font-size="6" font-family="Share Tech Mono" text-anchor="middle">${val}</text>
+        `, 'TRANSMITTER');
       }
     };
 
@@ -560,6 +577,7 @@
       const sc = SCADA.scenario, c = SCADA.cmp, f = SvgFactory, att = SCADA.underAttack;
       let h = '';
 
+      // 1. WATER & WASTEWATER
       if (sc === 'WATER') {
         let w = SCADA.W, flow = w.flow>0;
         h += f.pipe("M 110 200 L 110 280 L 280 280", flow, att||w.press>150, '#38bdf8');
@@ -568,77 +586,159 @@
         h += f.pump(200, 280, "P-101", w.p1, SCADA.faults.has('P-101'), SCADA.loto.has('P-101'));
         h += f.valve(400, 280, "V-101", w.v1, SCADA.loto.has('V-101'));
         h += f.tank(530, 100, "TK-102 (CLN)", w.tk2, 100, 100, '#38bdf8');
+        h += f.transmitter(340, 260, "PT-101", w.press.toFixed(1), "PSI");
+        
         if (c !== 'SIMPLE') {
           h += f.pipe("M 160 280 L 160 340 L 250 340 L 250 280", w.p2, false, '#38bdf8');
           h += f.pump(200, 340, "P-102", w.p2, SCADA.faults.has('P-102'), SCADA.loto.has('P-102'));
+          h += f.tank(350, 60, "DOSING", w.tk3, 70, 70, '#10b981');
+          h += f.pipe("M 385 130 L 385 280", w.p3, false, '#10b981');
+          h += f.pump(385, 180, "P-103", w.p3, false, false);
         }
         if (c === 'ADVANCED') {
           h += f.valve(480, 280, "SIS-101", w.sis, SCADA.loto.has('SIS-101'));
           h += f.pipe("M 350 280 L 350 220 L 450 220 L 450 280", w.v2>0, false, '#38bdf8');
           h += f.valve(400, 220, "V-102 (BYP)", w.v2, SCADA.loto.has('V-102'));
+          h += f.transmitter(600, 80, "AT-101", "0.2 NTU", "");
         }
       }
+
+      // 2. CHEMICAL BATCH
       else if (sc === 'CHEM') {
         let ch = SCADA.C;
         h += f.tank(330, 140, "RX-201", ch.rx, 140, 120, '#d97706');
-        h += `<g transform="translate(400, 200)" class="interactive-equip" data-equip="AG-1" data-type="MOTOR"><circle cx="0" cy="0" r="12" fill="none" stroke="#64748b"/><g class="${ch.ag?'spin-center':''}"><path d="M -20 0 L 20 0 M 0 -20 L 0 20" stroke="#cbd5e1" stroke-width="2"/></g></g>`;
-        if (ch.h) h += `<rect x="325" y="135" width="150" height="130" fill="none" stroke="#ef4444" stroke-width="3" rx="6"/>`;
+        h += `<g transform="translate(400, 200)" class="interactive-equip" data-equip="AG-1" data-type="MOTOR"><circle cx="0" cy="0" r="14" fill="#0f172a" stroke="#64748b"/><g class="${ch.ag?'spin-center':''}"><path d="M -18 0 L 18 0 M 0 -18 L 0 18" stroke="#cbd5e1" stroke-width="2.5"/></g><text x="0" y="26" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">AG-101</text></g>`;
+        if (ch.h) h += `<rect x="325" y="135" width="150" height="130" fill="none" stroke="#ef4444" stroke-width="3" rx="6" stroke-dasharray="4,4"/>`;
         h += f.pipe("M 400 260 L 400 320 L 600 320", ch.vDis>0, false, '#d97706');
         h += f.valve(500, 320, "V-DIS", ch.vDis, false);
+        h += f.transmitter(380, 120, "TT-201", ch.temp.toFixed(1)+"C", "");
+        
         if (c !== 'SIMPLE') {
           h += f.pipe("M 150 140 L 330 140", ch.p1, false, '#10b981');
           h += f.tank(70, 90, "TK-A", ch.tkA, 80, 80, '#10b981');
           h += f.pump(220, 140, "P-A", ch.p1, SCADA.faults.has('P-A'), SCADA.loto.has('P-A'));
+          h += f.tank(650, 260, "PROD", ch.tkProd, 90, 100, '#d97706');
         }
         if (c === 'ADVANCED') {
           h += f.pipe("M 650 140 L 470 140", ch.p2, false, '#8b5cf6');
           h += f.tank(650, 90, "TK-B", ch.tkB, 80, 80, '#8b5cf6');
           h += f.pump(560, 140, "P-B", ch.p2, false, false);
+          h += f.transmitter(430, 120, "PT-201", ch.press.toFixed(1)+"Bar", "");
         }
       }
+
+      // 3. POWER SUBSTATION
       else if (sc === 'POWER') {
         let p = SCADA.P;
-        h += f.pipe("M 150 150 L 150 250 L 600 250", p.cbM, false, '#eab308');
+        h += f.pipe("M 100 200 L 700 200", p.cbM, false, '#eab308', 'ELEC');
         h += f.breaker(150, 200, "CB-MAIN", p.cbM);
-        h += `<g transform="translate(300, 250)"><circle cx="-12" cy="0" r="16" fill="none" stroke="#eab308" stroke-width="3"/><circle cx="12" cy="0" r="16" fill="none" stroke="#eab308" stroke-width="3"/><text x="0" y="32" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">TX-01 (115kV/13.8kV)</text></g>`;
-        if (c !== 'SIMPLE') { h += f.pipe("M 450 250 L 450 320", p.cb1, false, '#eab308'); h += f.breaker(450, 280, "CB-F1", p.cb1); }
-        if (c === 'ADVANCED') { h += f.pipe("M 550 250 L 550 320", p.cb2, false, '#eab308'); h += f.breaker(550, 280, "CB-F2", p.cb2); h += f.breaker(620, 250, "CB-TIE", p.cbTie); }
+        h += `<g transform="translate(300, 200)"><circle cx="-12" cy="0" r="16" fill="none" stroke="#eab308" stroke-width="3"/><circle cx="12" cy="0" r="16" fill="none" stroke="#eab308" stroke-width="3"/><text x="0" y="32" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">TX-101 (115kV/13.8kV)</text></g>`;
+        h += f.transmitter(400, 170, "VT-301", p.volt.toFixed(1)+"kV", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.pipe("M 450 200 L 450 300", p.cb1, false, '#eab308', 'ELEC');
+          h += f.breaker(450, 250, "CB-F1", p.cb1);
+        }
+        if (c === 'ADVANCED') {
+          h += f.pipe("M 580 200 L 580 300", p.cb2, false, '#eab308', 'ELEC');
+          h += f.breaker(580, 250, "CB-F2", p.cb2);
+          h += f.breaker(640, 200, "CB-TIE", p.cbTie);
+          h += f.transmitter(300, 140, "PT-301", p.sf6.toFixed(1)+"Bar", "");
+        }
       }
+
+      // 4. HVAC BAS
       else if (sc === 'HVAC') {
         let hv = SCADA.H;
-        h += f.fan(400, 200, "AHU-1", hv.ah1, SCADA.faults.has('AHU-1'), SCADA.loto.has('AHU-1'));
-        h += f.pipe("M 200 200 L 370 200", hv.ah1, false, '#38bdf8');
-        h += f.valve(280, 200, "DMP-1", hv.d1, false);
-        if (c !== 'SIMPLE') { h += f.equip(200, 260, "CH-1", `<rect width="80" height="60" fill="#0f172a" stroke="#38bdf8"/><text x="40" y="35" fill="${hv.ch1?'#38bdf8':'#475569'}" text-anchor="middle">CHILLER</text>`, 'CHILLER'); }
+        h += `<rect x="250" y="150" width="300" height="100" fill="#070a12" stroke="#334155" stroke-width="2" rx="4"/>`;
+        h += f.fan(500, 200, "AHU-1", hv.ah1, SCADA.faults.has('AHU-1'), SCADA.loto.has('AHU-1'));
+        h += f.pipe("M 150 200 L 250 200", hv.ah1, false, '#38bdf8');
+        h += f.pipe("M 550 200 L 680 200", hv.ah1, false, '#38bdf8');
+        h += f.valve(200, 200, "DMP-OA", hv.d1, false);
+        h += f.transmitter(600, 170, "TT-401", hv.sTemp.toFixed(1)+"F", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.equip(320, 200, "CH-1", `<rect width="60" height="50" fill="#0f172a" stroke="#38bdf8" rx="3"/><text x="30" y="30" fill="${hv.ch1?'#38bdf8':'#475569'}" font-size="8" font-family="Orbitron" text-anchor="middle">CHILLER</text>`, 'CHILLER');
+          h += f.pump(350, 320, "P-CHW", hv.p1, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.fan(100, 200, "CT-101", hv.ct1, false, false);
+          h += f.transmitter(420, 170, "RH-401", hv.rh.toFixed(0)+"%", "");
+        }
       }
+
+      // 5. OIL PIPELINE
       else if (sc === 'OIL') {
         let o = SCADA.O;
-        h += f.pipe("M 100 250 L 700 250", o.flow>0, att||o.press>300, '#d97706');
-        h += f.pump(250, 250, "P-Main", o.p1, SCADA.faults.has('P-Main'), SCADA.loto.has('P-Main'));
-        h += f.valve(450, 250, "V-Block", o.v1, false);
-        if (c !== 'SIMPLE') h += f.pump(250, 320, "P-Boost", o.p2, false, false);
-        if (c === 'ADVANCED') h += f.tank(550, 100, "SURGE", o.tkS, 80, 100, '#d97706');
+        h += f.pipe("M 80 220 L 720 220", o.flow>0, att||o.press>300, '#d97706');
+        h += f.valve(140, 220, "ESD-101", o.esd, false);
+        h += f.pump(280, 220, "P-MAIN", o.p1, SCADA.faults.has('P-Main'), SCADA.loto.has('P-Main'));
+        h += f.valve(480, 220, "PCV-501", o.v1, false);
+        h += f.transmitter(380, 190, "PT-501", o.press.toFixed(0)+"PSI", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.pipe("M 200 220 L 200 300 L 360 300 L 360 220", o.p2, false, '#d97706');
+          h += f.pump(280, 300, "P-BOOST", o.p2, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.tank(580, 80, "SURGE", o.tkS, 80, 90, '#d97706');
+          h += f.pipe("M 520 220 L 520 130 L 580 130", o.press>300, false, '#d97706');
+          h += f.transmitter(280, 170, "VT-501", o.vib.toFixed(2)+"G", "");
+        }
       }
+
+      // 6. FOOD & BEVERAGE
       else if (sc === 'FOOD') {
         let fd = SCADA.F;
-        h += f.tank(100, 100, "PROD", fd.tkProd, 80, 100, '#fde047');
-        h += `<g transform="translate(350,250)"><rect width="100" height="40" fill="#0f172a" stroke="#10b981"/><text x="50" y="25" fill="${fd.fil?'#10b981':'#475569'}" text-anchor="middle">FILLER</text></g>`;
-        if (c !== 'SIMPLE') { h += f.equip(250, 150, "HX-1", `<rect width="60" height="60" fill="#0f172a" stroke="${fd.hx?'#ef4444':'#64748b'}"/><text x="30" y="35" fill="#fff" text-anchor="middle">PAST</text>`, 'HEATER'); }
-        if (c === 'ADVANCED') h += f.tank(550, 100, "CIP", fd.tkCIP, 80, 100, '#38bdf8');
+        h += f.tank(100, 120, "TK-PROD", fd.tkProd, 80, 110, '#fde047');
+        h += `<g transform="translate(360,230)"><rect width="100" height="50" fill="#0f172a" stroke="#10b981" rx="4"/><text x="50" y="30" fill="${fd.fil?'#10b981':'#475569'}" font-size="9" font-family="Orbitron" text-anchor="middle">FILLER CAROUSEL</text></g>`;
+        h += f.pipe("M 180 230 L 360 230", fd.fil, false, '#fde047');
+        h += f.transmitter(480, 210, "CT-601", fd.bottleCount+" BTL", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.equip(250, 180, "HX-601", `<rect width="60" height="60" fill="#0f172a" stroke="${fd.hx?'#ef4444':'#64748b'}" rx="4"/><text x="30" y="35" fill="#fff" font-size="8" font-family="Orbitron" text-anchor="middle">PAST HX</text>`, 'HEATER');
+          h += f.transmitter(280, 150, "TT-601", fd.temp.toFixed(1)+"C", "");
+        }
+        if (c === 'ADVANCED') {
+          h += f.tank(580, 80, "CIP-TANK", fd.tkCIP, 80, 100, '#06b6d4');
+          h += f.pump(500, 130, "P-CIP", fd.pCIP, false, false);
+          h += f.pipe("M 580 130 L 310 130 M 250 180 L 250 130", fd.pCIP, false, '#06b6d4');
+        }
       }
+
+      // 7. CLEANROOM
       else if (sc === 'CLEAN') {
         let cl = SCADA.CL;
-        h += `<rect x="200" y="100" width="400" height="200" fill="none" stroke="#38bdf8" stroke-dasharray="10 5"/>`;
-        h += f.fan(400, 100, "HEPA-1", cl.f1, false, false);
-        if (c !== 'SIMPLE') h += f.fan(500, 100, "HEPA-2", cl.f2, false, false);
-        if (c === 'ADVANCED') h += f.fan(300, 300, "SCRUB", cl.s1, false, false);
+        h += `<rect x="180" y="120" width="440" height="200" fill="none" stroke="#38bdf8" stroke-dasharray="8 4" rx="6"/>`;
+        h += `<text x="400" y="140" fill="#38bdf8" font-size="10" font-family="Orbitron" text-anchor="middle">CLASS 1 FAB ENCLOSURE</text>`;
+        h += f.fan(280, 120, "FFU-101", cl.f1, false, false);
+        h += f.transmitter(400, 220, "DPT-701", cl.diff.toFixed(0)+"Pa", "");
+        h += f.transmitter(480, 220, "PRT-701", cl.part+" P/M3", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.fan(480, 120, "FFU-102", cl.f2, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.fan(620, 220, "SCRUBBER", cl.s1, false, false);
+          h += f.pipe("M 620 220 L 720 220", cl.s1, false, '#a855f7');
+        }
       }
+
+      // 8. DATA CENTER
       else if (sc === 'DATA') {
         let d = SCADA.D;
-        h += `<g transform="translate(350, 150)"><rect width="100" height="150" fill="#0f172a" stroke="#64748b"/><text x="50" y="80" fill="#fff" text-anchor="middle">SERVER RACKS</text></g>`;
-        h += f.fan(250, 200, "CRAC-1", d.crac1, false, false);
-        if (c !== 'SIMPLE') h += f.fan(550, 200, "CRAC-2", d.crac2, false, false);
-        if (c === 'ADVANCED') { h += f.equip(100, 100, "UPS", `<rect width="60" height="40" fill="${d.ups?'#10b981':'#ef4444'}"/><text x="30" y="25" fill="#fff" text-anchor="middle">UPS</text>`, 'PWR'); }
+        h += `<g transform="translate(340, 140)"><rect width="120" height="160" fill="#0f172a" stroke="#64748b" rx="4"/><text x="60" y="85" fill="#fff" font-size="9" font-family="Orbitron" text-anchor="middle">SERVER RACKS</text></g>`;
+        h += f.fan(240, 220, "CRAC-1", d.crac1, false, false);
+        h += f.transmitter(400, 110, "TT-801", d.sTemp.toFixed(1)+"F", "");
+        h += f.transmitter(400, 320, "KW-801", d.kw+"kW", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.fan(560, 220, "CRAC-2", d.crac2, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.equip(100, 120, "UPS-101", `<rect width="70" height="50" fill="${d.ups?'#10b981':'#ef4444'}" rx="4"/><text x="35" y="30" fill="#fff" font-size="8" font-family="Orbitron" text-anchor="middle">UPS BAT</text>`, 'PWR');
+          h += f.transmitter(135, 90, "SOC-1", d.batSoC+"%", "");
+        }
       }
       svg.innerHTML = h;
     }
@@ -651,8 +751,8 @@
 
       const btn = (lbl, on, off, state, col) => `
         <div class="flex gap-1 mt-2">
-          <button onclick="${on}" class="flex-1 py-1.5 rounded text-[10px] font-bold text-white bg-${state ? col+'-700 shadow-inner' : 'slate-800'} border border-${state ? col+'-500' : 'slate-600'} btn-tactile">ON/OPEN</button>
-          <button onclick="${off}" class="flex-1 py-1.5 rounded text-[10px] font-bold text-white bg-${!state ? 'red-700 shadow-inner' : 'slate-800'} border border-${!state ? 'red-600' : 'slate-600'} btn-tactile">OFF/CLOSE</button>
+          <button onclick="${on}" class="flex-1 py-1.5 rounded text-[10px] font-bold text-white bg-${state ? col+'-700 shadow-inner border-'+col+'-500' : 'slate-800 border-slate-600'} border btn-tactile">ON/OPEN</button>
+          <button onclick="${off}" class="flex-1 py-1.5 rounded text-[10px] font-bold text-white bg-${!state ? 'red-700 shadow-inner border-red-500' : 'slate-800 border-slate-600'} border btn-tactile">OFF/CLOSE</button>
         </div>`;
       const sld = (lbl, val, cmd) => `
         <div class="mt-2 text-[10px] text-slate-300 flex justify-between font-mono"><span>${lbl}</span><span class="text-cyan-400 font-bold">${val}%</span></div>
@@ -662,41 +762,46 @@
       if (sc === 'WATER') {
         h += bzl('MAIN PUMP [P-101]', btn('P1', `SCADA.W.p1=true`, `SCADA.W.p1=false`, SCADA.W.p1, 'emerald'));
         h += bzl('INLET VALVE [V-101]', sld('Position', SCADA.W.v1, `SCADA.W.v1=parseInt(this.value)`));
-        if (c !== 'SIMPLE') h += bzl('STANDBY PUMP [P-102]', btn('P2', `SCADA.W.p2=true`, `SCADA.W.p2=false`, SCADA.W.p2, 'emerald'));
+        if (c !== 'SIMPLE') {
+          h += bzl('STANDBY PUMP [P-102]', btn('P2', `SCADA.W.p2=true`, `SCADA.W.p2=false`, SCADA.W.p2, 'emerald'));
+          h += bzl('DOSING PUMP [P-103]', btn('P3', `SCADA.W.p3=true`, `SCADA.W.p3=false`, SCADA.W.p3, 'emerald'));
+        }
         if (c === 'ADVANCED') {
           h += bzl('SIS INTERLOCK', btn('SIS', `SCADA.W.sis=100`, `SCADA.W.sis=0`, SCADA.W.sis>0, 'emerald'));
-          h += bzl('BYPASS [V-102]', sld('Position', SCADA.W.v2, `SCADA.W.v2=parseInt(this.value)`));
+          h += bzl('BYPASS VALVE [V-102]', sld('Position', SCADA.W.v2, `SCADA.W.v2=parseInt(this.value)`));
         }
       } else if (sc === 'CHEM') {
-        h += bzl('AGITATOR [AG-1]', btn('MIX', `SCADA.C.ag=true`, `SCADA.C.ag=false`, SCADA.C.ag, 'cyan'));
-        h += bzl('HEATER [H-101]', btn('HEAT', `SCADA.C.h=true`, `SCADA.C.h=false`, SCADA.C.h, 'amber'), 'amber');
-        h += bzl('DISCHARGE [V-DIS]', sld('Position', SCADA.C.vDis, `SCADA.C.vDis=parseInt(this.value)`));
-        if (c !== 'SIMPLE') h += bzl('PUMP A', btn('PA', `SCADA.C.p1=true`, `SCADA.C.p1=false`, SCADA.C.p1, 'emerald'));
-        if (c === 'ADVANCED') h += bzl('PUMP B', btn('PB', `SCADA.C.p2=true`, `SCADA.C.p2=false`, SCADA.C.p2, 'emerald'));
+        h += bzl('AGITATOR [AG-101]', btn('MIX', `SCADA.C.ag=true`, `SCADA.C.ag=false`, SCADA.C.ag, 'cyan'));
+        h += bzl('HEATER JACKET', btn('HEAT', `SCADA.C.h=true`, `SCADA.C.h=false`, SCADA.C.h, 'amber'), 'amber');
+        h += bzl('HARVEST VALVE [V-DIS]', sld('Position', SCADA.C.vDis, `SCADA.C.vDis=parseInt(this.value)`));
+        if (c !== 'SIMPLE') h += bzl('DOSING PUMP A', btn('PA', `SCADA.C.p1=true`, `SCADA.C.p1=false`, SCADA.C.p1, 'emerald'));
+        if (c === 'ADVANCED') h += bzl('DOSING PUMP B', btn('PB', `SCADA.C.p2=true`, `SCADA.C.p2=false`, SCADA.C.p2, 'emerald'));
       } else if (sc === 'POWER') {
-        h += bzl('MAIN BREAKER', btn('CBM', `SCADA.P.cbM=true`, `SCADA.P.cbM=false`, SCADA.P.cbM, 'emerald'));
-        if (c !== 'SIMPLE') h += bzl('FEEDER 1', btn('CB1', `SCADA.P.cb1=true`, `SCADA.P.cb1=false`, SCADA.P.cb1, 'emerald'));
-        if (c === 'ADVANCED') { h += bzl('FEEDER 2', btn('CB2', `SCADA.P.cb2=true`, `SCADA.P.cb2=false`, SCADA.P.cb2, 'emerald')); h += bzl('BUS TIE', btn('TIE', `SCADA.P.cbTie=true`, `SCADA.P.cbTie=false`, SCADA.P.cbTie, 'emerald')); }
+        h += bzl('MAIN SF6 BREAKER', btn('CBM', `SCADA.P.cbM=true`, `SCADA.P.cbM=false`, SCADA.P.cbM, 'emerald'));
+        if (c !== 'SIMPLE') h += bzl('FEEDER BREAKER 1', btn('CB1', `SCADA.P.cb1=true`, `SCADA.P.cb1=false`, SCADA.P.cb1, 'emerald'));
+        if (c === 'ADVANCED') { h += bzl('FEEDER BREAKER 2', btn('CB2', `SCADA.P.cb2=true`, `SCADA.P.cb2=false`, SCADA.P.cb2, 'emerald')); h += bzl('BUS TIE BREAKER', btn('TIE', `SCADA.P.cbTie=true`, `SCADA.P.cbTie=false`, SCADA.P.cbTie, 'emerald')); }
       } else if (sc === 'HVAC') {
-        h += bzl('AIR HANDLER [AHU-1]', btn('AHU', `SCADA.H.ah1=true`, `SCADA.H.ah1=false`, SCADA.H.ah1, 'emerald'));
+        h += bzl('SUPPLY FAN [AHU-1]', btn('AHU', `SCADA.H.ah1=true`, `SCADA.H.ah1=false`, SCADA.H.ah1, 'emerald'));
         h += bzl('MIXING DAMPER', sld('Position', SCADA.H.d1, `SCADA.H.d1=parseInt(this.value)`));
-        if (c !== 'SIMPLE') h += bzl('CHILLER [CH-1]', btn('CH', `SCADA.H.ch1=true`, `SCADA.H.ch1=false`, SCADA.H.ch1, 'cyan'));
+        if (c !== 'SIMPLE') { h += bzl('CHILLER [CH-1]', btn('CH', `SCADA.H.ch1=true`, `SCADA.H.ch1=false`, SCADA.H.ch1, 'cyan')); h += bzl('CHW PUMP', btn('PCHW', `SCADA.H.p1=true`, `SCADA.H.p1=false`, SCADA.H.p1, 'emerald')); }
+        if (c === 'ADVANCED') h += bzl('COOLING TOWER FAN', btn('CT', `SCADA.H.ct1=true`, `SCADA.H.ct1=false`, SCADA.H.ct1, 'cyan'));
       } else if (sc === 'OIL') {
-        h += bzl('MAIN PUMP', btn('P1', `SCADA.O.p1=true`, `SCADA.O.p1=false`, SCADA.O.p1, 'emerald'));
-        h += bzl('BLOCK VALVE', sld('Position', SCADA.O.v1, `SCADA.O.v1=parseInt(this.value)`));
-        if (c !== 'SIMPLE') h += bzl('BOOSTER PUMP', btn('P2', `SCADA.O.p2=true`, `SCADA.O.p2=false`, SCADA.O.p2, 'emerald'));
+        h += bzl('MAIN BOOSTER PUMP', btn('P1', `SCADA.O.p1=true`, `SCADA.O.p1=false`, SCADA.O.p1, 'emerald'));
+        h += bzl('DISCHARGE VALVE', sld('Position', SCADA.O.v1, `SCADA.O.v1=parseInt(this.value)`));
+        if (c !== 'SIMPLE') h += bzl('BOOSTER PUMP 2', btn('P2', `SCADA.O.p2=true`, `SCADA.O.p2=false`, SCADA.O.p2, 'emerald'));
+        if (c === 'ADVANCED') h += bzl('ESD ISOLATION VALVE', sld('Position', SCADA.O.esd, `SCADA.O.esd=parseInt(this.value)`));
       } else if (sc === 'FOOD') {
         h += bzl('FILLER LINE', btn('FIL', `SCADA.F.fil=true`, `SCADA.F.fil=false`, SCADA.F.fil, 'emerald'));
         if (c !== 'SIMPLE') h += bzl('PASTEURIZER HX', btn('HX', `SCADA.F.hx=true`, `SCADA.F.hx=false`, SCADA.F.hx, 'amber'), 'amber');
-        if (c === 'ADVANCED') h += bzl('CIP PUMP', btn('CIP', `SCADA.F.pCIP=true`, `SCADA.F.pCIP=false`, SCADA.F.pCIP, 'cyan'));
+        if (c === 'ADVANCED') h += bzl('CIP SANITIZE PUMP', btn('CIP', `SCADA.F.pCIP=true`, `SCADA.F.pCIP=false`, SCADA.F.pCIP, 'cyan'));
       } else if (sc === 'CLEAN') {
         h += bzl('HEPA BLOWER 1', btn('F1', `SCADA.CL.f1=true`, `SCADA.CL.f1=false`, SCADA.CL.f1, 'emerald'));
         if (c !== 'SIMPLE') h += bzl('HEPA BLOWER 2', btn('F2', `SCADA.CL.f2=true`, `SCADA.CL.f2=false`, SCADA.CL.f2, 'emerald'));
-        if (c === 'ADVANCED') h += bzl('EXHAUST SCRUBBER', btn('S1', `SCADA.CL.s1=true`, `SCADA.CL.s1=false`, SCADA.CL.s1, 'emerald'));
+        if (c === 'ADVANCED') h += bzl('GAS SCRUBBER', btn('S1', `SCADA.CL.s1=true`, `SCADA.CL.s1=false`, SCADA.CL.s1, 'emerald'));
       } else if (sc === 'DATA') {
         h += bzl('CRAC UNIT 1', btn('C1', `SCADA.D.crac1=true`, `SCADA.D.crac1=false`, SCADA.D.crac1, 'cyan'));
         if (c !== 'SIMPLE') h += bzl('CRAC UNIT 2', btn('C2', `SCADA.D.crac2=true`, `SCADA.D.crac2=false`, SCADA.D.crac2, 'cyan'));
-        if (c === 'ADVANCED') h += bzl('UPS SYSTEM', btn('UPS', `SCADA.D.ups=true`, `SCADA.D.ups=false`, SCADA.D.ups, 'emerald'));
+        if (c === 'ADVANCED') h += bzl('UPS BATTERY BANK', btn('UPS', `SCADA.D.ups=true`, `SCADA.D.ups=false`, SCADA.D.ups, 'emerald'));
       }
       pane.innerHTML = h;
     }
@@ -705,20 +810,17 @@
       let v1=0, v2=0, v3=0, v4=0, l1='', l2='', l3='', l4='', max1=100, max2=100, max3=100, max4=100;
       let att = SCADA.underAttack, sc = SCADA.scenario;
 
-      if (sc === 'WATER') { v1 = att?45:SCADA.W.press; v2 = att?75:SCADA.W.tk1; v3 = att?150:SCADA.W.flow; v4 = att?0.1:(SCADA.W.p1?0.3:0.1); l1='PSI'; l2='TK-1 LVL'; l3='FLOW'; l4='VIB'; max1=200; max3=500; max4=1; }
-      else if (sc === 'CHEM') { v1 = att?24.5:SCADA.C.temp; v2 = att?1.0:SCADA.C.press; v3 = att?7.0:7.2; v4 = att?10:SCADA.C.rx; l1='TEMP C'; l2='BAR'; l3='pH'; l4='RX LVL'; max1=150; max2=20; max3=14; }
-      else if (sc === 'POWER') { v1 = att?60:SCADA.P.freq; v2 = att?45:SCADA.P.load; v3 = att?13.8:SCADA.P.volt; v4 = 0.92; l1='Hz'; l2='MW'; l3='kV'; l4='PF'; max1=70; max2=150; max3=20; max4=1; }
-      else if (sc === 'HVAC') { v1 = SCADA.H.sTemp; v2 = SCADA.H.flow; v3 = 0.5; v4 = 45; l1='TEMP F'; l2='CFM'; l3='IN WC'; l4='RH %'; max1=120; max2=10000; max3=2; }
-      else if (sc === 'OIL') { v1 = att?200:SCADA.O.press; v2 = att?500:SCADA.O.flow; v3 = SCADA.O.tkS; v4 = 0.2; l1='PSI'; l2='BBL/H'; l3='SURGE'; l4='VIB'; max1=1000; max2=1000; }
-      else if (sc === 'FOOD') { v1 = SCADA.F.temp; v2 = SCADA.F.tkProd; v3 = SCADA.F.count; v4 = SCADA.F.tkCIP; l1='TEMP C'; l2='PROD LVL'; l3='BOTTLES'; l4='CIP LVL'; max1=100; max3=5000; }
-      else if (sc === 'CLEAN') { v1 = SCADA.CL.diff; v2 = SCADA.CL.part; v3 = SCADA.CL.rh; v4 = 68; l1='DIFF PA'; l2='PRTCL'; l3='RH %'; l4='TEMP F'; max1=100; max2=2000; max4=100; }
-      else if (sc === 'DATA') { v1 = SCADA.D.sTemp; v2 = SCADA.D.kw; v3 = 40; v4 = 99; l1='TEMP F'; l2='kW'; l3='RH %'; l4='UPS %'; max1=150; max2=2000; }
+      if (sc === 'WATER') { v1 = att?45:SCADA.W.press; v2 = att?75:SCADA.W.tk1; v3 = att?150:SCADA.W.flow; v4 = att?0.1:SCADA.W.turb; l1='PSI'; l2='TK-1 LVL'; l3='FLOW GPM'; l4='TURB NTU'; max1=200; max3=500; max4=5; }
+      else if (sc === 'CHEM') { v1 = att?24.5:SCADA.C.temp; v2 = att?1.0:SCADA.C.press; v3 = att?7.0:7.2; v4 = att?10:SCADA.C.rx; l1='TEMP C'; l2='BAR'; l3='pH'; l4='RX LVL %'; max1=150; max2=20; max3=14; }
+      else if (sc === 'POWER') { v1 = att?60:SCADA.P.freq; v2 = att?45:SCADA.P.load; v3 = att?13.8:SCADA.P.volt; v4 = SCADA.P.sf6; l1='Hz'; l2='MW'; l3='kV'; l4='SF6 BAR'; max1=70; max2=150; max3=20; max4=10; }
+      else if (sc === 'HVAC') { v1 = SCADA.H.sTemp; v2 = SCADA.H.flow; v3 = 0.5; v4 = SCADA.H.rh; l1='TEMP F'; l2='CFM'; l3='IN WC'; l4='RH %'; max1=120; max2=10000; max3=2; }
+      else if (sc === 'OIL') { v1 = att?200:SCADA.O.press; v2 = att?500:SCADA.O.flow; v3 = SCADA.O.tkS; v4 = SCADA.O.vib; l1='PSI'; l2='BBL/H'; l3='SURGE %'; l4='VIB G'; max1=800; max2=1000; max4=2; }
+      else if (sc === 'FOOD') { v1 = SCADA.F.temp; v2 = SCADA.F.tkProd; v3 = SCADA.F.bottleCount; v4 = SCADA.F.tkCIP; l1='TEMP C'; l2='PROD LVL'; l3='BOTTLES'; l4='CIP LVL'; max1=100; max3=5000; }
+      else if (sc === 'CLEAN') { v1 = SCADA.CL.diff; v2 = SCADA.CL.part; v3 = SCADA.CL.rh; v4 = SCADA.CL.temp; l1='DIFF PA'; l2='PRTCL/M3'; l3='RH %'; l4='TEMP F'; max1=100; max2=2000; max4=100; }
+      else if (sc === 'DATA') { v1 = SCADA.D.sTemp; v2 = SCADA.D.kw; v3 = SCADA.D.batSoC; v4 = 1.15; l1='TEMP F'; l2='kW LOAD'; l3='UPS SOC%'; l4='PUE'; max1=150; max2=2000; max4=3; }
 
-      // Fix: Safely check for DOM elements before accessing .style
-      const spoofWarn = document.getElementById('spoof-warning');
-      const trendSpoofWarn = document.getElementById('trend-spoof-warning');
+      const spoofWarn = document.getElementById('trend-spoof-warning');
       if (spoofWarn) spoofWarn.style.display = att ? 'block' : 'none';
-      if (trendSpoofWarn) trendSpoofWarn.style.display = att ? 'block' : 'none';
 
       document.getElementById('g1-lbl').innerText = l1; drawGauge('g1-can', v1, 0, max1, '#38bdf8'); document.getElementById('g1-val').innerText = v1.toFixed(1);
       document.getElementById('g2-lbl').innerText = l2; drawGauge('g2-can', v2, 0, max2, '#f59e0b'); document.getElementById('g2-val').innerText = v2.toFixed(1);
@@ -734,10 +836,9 @@
         drawTrend();
       }
 
-      // Electrical Bus Spoofer logic
       document.getElementById('elec-volts').innerText = (480 + (Math.random()-0.5)*2).toFixed(1) + ' V';
       document.getElementById('elec-amps').innerText = (12 + (Math.random()-0.5)).toFixed(1) + ' A';
-      document.getElementById('elec-freq').innerText = (60 + (Math.random()-0.5)*0.05).toFixed(2) + ' Hz';
+      document.getElementById('elec-freq').innerText = (60 + (Math.random()-0.5)*0.04).toFixed(2) + ' Hz';
     }
 
     function drawTrend() {
@@ -760,19 +861,17 @@
       ctx.beginPath(); ctx.arc(w/2, h*0.8, w*0.35, Math.PI, 2*Math.PI); ctx.lineWidth=6; ctx.strokeStyle='#1e293b'; ctx.stroke();
       let pct = Math.max(0, Math.min(1, (val-min)/(max-min)));
       ctx.beginPath(); ctx.arc(w/2, h*0.8, w*0.35, Math.PI, Math.PI + pct*Math.PI); ctx.strokeStyle=col; ctx.stroke();
-      
-      // Center Hub
       ctx.beginPath(); ctx.arc(w/2, h*0.8, 3, 0, 2*Math.PI); ctx.fillStyle='#94a3b8'; ctx.fill();
     }
 
-    function switchScenario(s) { SCADA.scenario = s; document.getElementById('scenario-title').innerText = s; renderControls(); renderSVG(); log('SYS', `Domain switched to ${s}`, 'INFO'); }
+    function switchScenario(s) { SCADA.scenario = s; document.getElementById('scenario-title').innerText = s; renderControls(); renderSVG(); log('SYS', `Process domain changed to ${s}`, 'INFO'); }
     function setComplexity(c) { SCADA.cmp = c; ['SIMPLE','INTERMEDIATE','ADVANCED'].forEach(id => { let b=document.getElementById(`cmp-${id}`); if(id===c) b.className='px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-700 text-white font-bold shadow border border-cyan-500'; else b.className='px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 hover:text-slate-200'; }); renderControls(); renderSVG(); }
     function setControlMode(m) { SCADA.mode = m; ['auto','manual'].forEach(id => { let b=document.getElementById(`btn-mode-${id}`); if(id===m.toLowerCase()) b.className='px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-600 text-white shadow'; else b.className='px-2 py-0.5 rounded text-[10px] font-mono text-slate-400'; }); }
     
     function toggleEstopGuard() { SCADA.estopLatch = !SCADA.estopLatch; let g=document.getElementById('estop-latch-cover'); if(SCADA.estopLatch) g.classList.add('open'); else g.classList.remove('open'); }
     function triggerEstop() {
-      if(!SCADA.estopLatch) { toast('Lift Safety Guard First'); return; }
-      if(SCADA.underAttack) { log('SEC', 'E-STOP BYPASSED BY MALWARE', 'CRIT'); toast('E-STOP FAILED! PLC UNRESPONSIVE'); return; }
+      if(!SCADA.estopLatch) { toast('Lift Safety Cover First'); return; }
+      if(SCADA.underAttack) { log('SEC', 'E-STOP OVERRIDDEN BY MALWARE LOGIC', 'CRIT'); toast('E-STOP FAILED! PLC LOGIC UNRESPONSIVE'); return; }
       SCADA.estopActive = true; 
       const st = document.getElementById('sys-status-text');
       if(st) { st.innerText = 'EMERGENCY STOP'; st.className = 'text-red-500 font-bold tracking-widest animate-pulse'; }
@@ -788,22 +887,22 @@
       p.prepend(div); if(p.children.length>50) p.lastChild.remove();
     }
     function ackAlarms() { toast("All Alarms Acknowledged"); }
-    function clearAlarms() { document.getElementById('alarm-log').innerHTML = ''; if(SCADA.estopActive){ SCADA.estopActive=false; document.getElementById('sys-status-text').innerText='NORMAL'; document.getElementById('sys-status-text').className='text-cyan-400 font-bold';} log('SYS', 'Log Cleared. Interlocks Reset.', 'INFO'); }
+    function clearAlarms() { document.getElementById('alarm-log').innerHTML = ''; if(SCADA.estopActive){ SCADA.estopActive=false; document.getElementById('sys-status-text').innerText='NORMAL'; document.getElementById('sys-status-text').className='text-cyan-400 font-bold';} log('SYS', 'Buffer Cleared. Interlocks Reset.', 'INFO'); }
     function toast(msg) { let t = document.createElement('div'); t.className = 'bg-slate-900 border border-slate-600 text-white px-3 py-1.5 rounded shadow-2xl text-[10px] font-mono transition-opacity duration-300'; t.innerText = msg; document.getElementById('toasts').appendChild(t); setTimeout(()=>{t.style.opacity='0'; setTimeout(()=>t.remove(), 300);}, 3000); }
 
     function openSecurityMenu() {
       document.getElementById('modal-content').innerHTML = `
         <div class="mb-4">
-          <h4 class="text-cyan-400 font-bold mb-2">Operator Mistakes & Best Practice Defense</h4>
+          <h4 class="text-cyan-400 font-bold mb-2">Operator Mistakes & SCADA Hardening Best Practices</h4>
           <ul class="list-disc pl-4 text-[11px] text-slate-300 space-y-2 leading-relaxed">
-            <li><strong>Network Segmentation:</strong> Never build flat OT networks. Use strict <strong>iptables</strong> packet filtering rules between Purdue Model Level 3 site control and Level 2 PLC cells.</li>
-            <li><strong>Threat Detection:</strong> Monitor OT traffic for unauthorized reverse tunnels (e.g. <em>Ligolo-ng</em>) and unexpected TLS handshakes using <strong>JA3 signature fingerprinting</strong>.</li>
-            <li><strong>Patch Management:</strong> Immediately patch boundary bastions against critical SSH exploits such as the <strong>OpenSSH regreSSHion vulnerability (CVE-2024-6387)</strong>.</li>
+            <li><strong>Flat Network Topology:</strong> Never bridge Purdue Level 3 IT networks directly to Level 2 PLC cells. Enforce strict <strong>iptables</strong> firewall rules.</li>
+            <li><strong>Command Intrusion Detection:</strong> Monitor OT traffic for unexpected reverse tunnels (e.g., <em>Ligolo-ng</em>) and unrecognized TLS handshakes using <strong>JA3 TLS fingerprinting</strong>.</li>
+            <li><strong>Edge Vulnerabilities:</strong> Patch perimeter bastions against critical exploits such as <strong>OpenSSH regreSSHion (CVE-2024-6387)</strong>.</li>
           </ul>
         </div>
         <div class="border border-red-900 bg-red-950/40 p-4 rounded-lg mt-4">
           <h4 class="text-red-400 font-bold mb-2 uppercase tracking-wide">Stuxnet APT Simulation Drill</h4>
-          <p class="text-[10px] text-slate-400 mb-3">Injects a targeted logic rootkit into the PLC controller. Malware forces physical destruction while actively spoofing HMI telemetry to read "Normal". E-Stop logic is overridden.</p>
+          <p class="text-[10px] text-slate-400 mb-3">Injects a logic rootkit directly into the PLC runtime. Malware forces physical overpressure while spoofing telemetry values to read normal and bypassing E-Stop routines.</p>
           <button onclick="launchAttack()" class="w-full py-2 bg-red-700 hover:bg-red-600 text-white font-bold rounded shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all">INJECT MALICIOUS PAYLOAD</button>
         </div>`;
       document.getElementById('modal-bg').classList.remove('hidden');
@@ -813,67 +912,94 @@
       if (SCADA.underAttack) return; SCADA.underAttack = true;
       document.getElementById('attack-overlay').classList.remove('hidden');
       document.getElementById('header-logo').classList.replace('bg-cyan-950', 'bg-red-950');
-      toast('SYSTEM COMPROMISED: PLC Logic Overwritten'); log('SEC', 'UNAUTHORIZED PLC LOGIC MODIFICATION', 'CRIT');
+      toast('SYSTEM COMPROMISED: PLC Logic Overwritten'); log('SEC', 'UNAUTHORIZED PLC LOGIC MODIFICATION DETECTED', 'CRIT');
     }
 
     function initEvents() {
       const tt = document.getElementById('tooltip'), ctx = document.getElementById('ctx-menu');
       
-      // Tooltip Hover Logic
+      // Hover Tooltip
       document.addEventListener('mousemove', e => {
         let el = e.target.closest('.interactive-equip');
         if(el && !SCADA.trendPaused) {
           tt.style.opacity=1; tt.style.left=(e.clientX+15)+'px'; tt.style.top=(e.clientY+15)+'px';
-          let id=el.dataset.equip, type=el.dataset.type, l=SCADA.loto.has(id), f=SCADA.faults.has(id);
+          let id=el.dataset.equip, type=el.dataset.type, l=SCADA.loto.has(id), f=SCADA.faults.has(id), b=SCADA.bypassed.has(id);
           document.getElementById('tt-id').innerText = id; document.getElementById('tt-type').innerText = type;
-          document.getElementById('tt-body').innerHTML = `<div>Status: <span class="${f?'text-red-400':l?'text-amber-400':'text-emerald-400'} font-bold">${f?'FAULT':l?'LOTO LOCK':'ONLINE'}</span></div><div>Comm: Modbus TCP | Health: ${f?'45%':'99%'}</div>`;
+          document.getElementById('tt-body').innerHTML = `
+            <div>Status: <span class="${f?'text-red-400':l?'text-amber-400':'text-emerald-400'} font-bold">${f?'FAULT':l?'LOTO LOCK':'ONLINE'}</span></div>
+            <div>Interlock: <span class="${b?'text-amber-400':'text-cyan-400'} font-bold">${b?'BYPASSED':'ACTIVE'}</span></div>
+            <div>Comm: Modbus/TCP Port 502 | Health: ${f?'32%':'99%'}</div>
+          `;
         } else tt.style.opacity=0;
       });
 
-      // Context Menu Generation
+      // Expanded Right-Click Context Menu
       document.addEventListener('contextmenu', e => {
         let el = e.target.closest('.interactive-equip');
         if(el) {
-          e.preventDefault(); let id=el.dataset.equip, l=SCADA.loto.has(id), f=SCADA.faults.has(id);
+          e.preventDefault(); let id=el.dataset.equip, l=SCADA.loto.has(id), f=SCADA.faults.has(id), b=SCADA.bypassed.has(id);
           ctx.style.display='block'; 
           
-          // Keep menu inside window bounds
           let x = e.clientX, y = e.clientY;
-          if (x + 250 > window.innerWidth) x = window.innerWidth - 260;
-          if (y + 200 > window.innerHeight) y = window.innerHeight - 210;
+          if (x + 280 > window.innerWidth) x = window.innerWidth - 290;
+          if (y + 320 > window.innerHeight) y = window.innerHeight - 330;
           ctx.style.left = x + 'px'; ctx.style.top = y + 'px';
           
           document.getElementById('ctx-eid').innerText=id;
           document.getElementById('ctx-body').innerHTML = `
-            <div class="grid grid-cols-4 gap-1 px-2 py-1.5 bg-slate-950/50">
-              <button onclick="toast('Command Sent: 0%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">0%</button>
-              <button onclick="toast('Command Sent: 25%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">25%</button>
-              <button onclick="toast('Command Sent: 75%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">75%</button>
-              <button onclick="toast('Command Sent: 100%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold text-cyan-400">100%</button>
+            <div class="px-2 py-1 text-[9px] text-slate-400 font-bold bg-slate-950 uppercase">VFD / Setpoint Presets</div>
+            <div class="grid grid-cols-5 gap-1 px-2 py-1 bg-slate-950/50">
+              <button onclick="toast('${id}: Setpoint 0%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">0%</button>
+              <button onclick="toast('${id}: Setpoint 25%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">25%</button>
+              <button onclick="toast('${id}: Setpoint 50%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">50%</button>
+              <button onclick="toast('${id}: Setpoint 75%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold">75%</button>
+              <button onclick="toast('${id}: Setpoint 100%')" class="px-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-center text-[9px] font-bold text-cyan-400">100%</button>
             </div>
-            <button class="w-full text-left px-3 py-2 hover:bg-slate-800 flex justify-between ${l?'text-emerald-400':'text-amber-400'}" onclick="toggleLoto('${id}')"><span>🔒 ${l?'Remove LOTO Tag':'Apply Safety LOTO'}</span></button>
-            <button class="w-full text-left px-3 py-2 hover:bg-slate-800 flex justify-between text-red-400" onclick="injFault('${id}')"><span>⚠️ ${f?'Clear Hardware Fault':'Inject Hardware Fault'}</span></button>
-            <button class="w-full text-left px-3 py-2 hover:bg-slate-800 flex justify-between" onclick="openDiag('${id}')"><span>🩺 Vibration & Health Diag</span></button>
-            <button class="w-full text-left px-3 py-2 hover:bg-slate-800 flex justify-between text-cyan-400" onclick="toast('Exported CSV for ${id}')"><span>📊 Export Telemetry CSV</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between ${l?'text-emerald-400':'text-amber-400'}" onclick="toggleLoto('${id}')"><span>🔒 ${l?'Remove LOTO Tag':'Apply Safety LOTO'}</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between ${b?'text-cyan-400':'text-amber-300'}" onclick="toggleBypass('${id}')"><span>🛡️ ${b?'Re-engage Interlock':'Force Interlock Bypass'}</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between text-red-400" onclick="injFault('${id}')"><span>⚠️ ${f?'Clear Hardware Fault':'Inject Hardware Fault'}</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between text-purple-300" onclick="openPidTune('${id}')"><span>🎛️ Tune PID Controller</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between" onclick="openDiag('${id}')"><span>🩺 FFT Vibration Spectrum & Health</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between text-cyan-400" onclick="toast('Generated Maintenance Work Order for ${id}')"><span>📋 Generate Work Order</span></button>
+            <button class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between text-emerald-400" onclick="toast('Exported CSV for ${id}')"><span>📊 Export Telemetry CSV</span></button>
           `;
         } else ctx.style.display='none';
       });
       document.addEventListener('click', ()=>ctx.style.display='none');
     }
 
-    function toggleLoto(id) { if(SCADA.loto.has(id)) { SCADA.loto.delete(id); log('SAF', `LOTO Removed from ${id}`, 'INFO'); } else { SCADA.loto.add(id); log('SAF', `LOTO Applied to ${id}`, 'WARN'); } renderSVG(); }
-    function injFault(id) { if(SCADA.faults.has(id)) { SCADA.faults.delete(id); log('FLT', `Fault Cleared on ${id}`, 'INFO'); } else { SCADA.faults.add(id); log('FLT', `HARDWARE FAULT DETECTED ON ${id}`, 'CRIT'); } renderSVG(); }
-    function openDiag(id) {
+    function toggleLoto(id) { if(SCADA.loto.has(id)) { SCADA.loto.delete(id); log('SAF', `LOTO Tag Removed from ${id}`, 'INFO'); } else { SCADA.loto.add(id); log('SAF', `Physical LOTO Tag Applied to ${id}`, 'WARN'); } renderSVG(); }
+    function toggleBypass(id) { if(SCADA.bypassed.has(id)) { SCADA.bypassed.delete(id); log('SAF', `Interlock Re-engaged for ${id}`, 'INFO'); } else { SCADA.bypassed.add(id); log('SAF', `SAFETY INTERLOCK BYPASSED FOR ${id}`, 'WARN'); } }
+    function injFault(id) { if(SCADA.faults.has(id)) { SCADA.faults.delete(id); log('FLT', `Hardware Fault Cleared on ${id}`, 'INFO'); } else { SCADA.faults.add(id); log('FLT', `HARDWARE FAULT INJECTED ON ${id}`, 'CRIT'); } renderSVG(); }
+    
+    function openPidTune(id) {
+      document.getElementById('diag-modal-title').innerText = `🎛️ PID CONTROLLER TUNING [${id}]`;
       document.getElementById('diag-modal-content').innerHTML = `
-        <div class="bg-slate-950 p-4 rounded border border-slate-800 space-y-3 font-digital tracking-wide">
-          <div class="flex justify-between border-b border-slate-800 pb-2"><span class="text-slate-400 text-[10px]">ASSET TAG:</span><span class="text-cyan-400 font-bold">${id}</span></div>
-          <div class="flex justify-between"><span class="text-slate-400 text-[10px]">BEARING TEMP:</span><span class="text-emerald-400">42.8 °C (OK)</span></div>
-          <div class="flex justify-between"><span class="text-slate-400 text-[10px]">AXIAL VIBRATION:</span><span class="text-amber-400">0.14 mm/s</span></div>
-          <div class="flex justify-between"><span class="text-slate-400 text-[10px]">WINDING RESIST:</span><span>1.2 Ω</span></div>
-          <div class="flex justify-between"><span class="text-slate-400 text-[10px]">OPERATING HOURS:</span><span>1,420 Hr</span></div>
+        <div class="bg-slate-950 p-3 rounded border border-slate-800 space-y-3 font-mono">
+          <div><label class="text-[10px] text-slate-400 block">PROPORTIONAL GAIN (Kp): 2.5</label><input type="range" min="0" max="10" value="2.5" class="w-full h-1 bg-slate-800 accent-cyan-400"></div>
+          <div><label class="text-[10px] text-slate-400 block">INTEGRAL GAIN (Ki): 0.15</label><input type="range" min="0" max="2" step="0.05" value="0.15" class="w-full h-1 bg-slate-800 accent-cyan-400"></div>
+          <div><label class="text-[10px] text-slate-400 block">DERIVATIVE GAIN (Kd): 0.05</label><input type="range" min="0" max="1" step="0.01" value="0.05" class="w-full h-1 bg-slate-800 accent-cyan-400"></div>
         </div>
-        <div class="flex gap-2 mt-4">
-          <button onclick="toast('Sensor Zeroed.')" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold rounded">ZERO SENSOR</button>
+        <div class="flex gap-2 mt-3">
+          <button onclick="toast('PID Parameters Uploaded.'); document.getElementById('diag-modal-bg').classList.add('hidden');" class="flex-1 py-1.5 bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold rounded">WRITE TO PLC</button>
+        </div>`;
+      document.getElementById('diag-modal-bg').classList.remove('hidden');
+    }
+
+    function openDiag(id) {
+      document.getElementById('diag-modal-title').innerText = `🩺 HEALTH DIAGNOSTICS & SPECTROGRAM [${id}]`;
+      document.getElementById('diag-modal-content').innerHTML = `
+        <div class="bg-slate-950 p-3 rounded border border-slate-800 space-y-2 font-digital text-[11px]">
+          <div class="flex justify-between border-b border-slate-800 pb-1"><span class="text-slate-400">ASSET TAG:</span><span class="text-cyan-400 font-bold">${id}</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">BEARING TEMP:</span><span class="text-emerald-400">41.2 °C (NOMINAL)</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">AXIAL VIBRATION:</span><span class="text-amber-400">0.12 mm/s</span></div>
+          <div class="flex justify-between"><span class="text-slate-400">OPERATING HOURS:</span><span>1,840 Hr</span></div>
+        </div>
+        <div class="panel-inset p-2 rounded h-24 flex items-center justify-center">
+          <span class="text-[10px] text-slate-500 font-mono">LIVE FFT SPECTRUM WAVEFORM (1X / 2X / 3X RPM HARMONICS)</span>
+        </div>
+        <div class="flex gap-2 mt-3">
+          <button onclick="toast('Sensor Calibration Zeroed.')" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold rounded">ZERO SENSOR</button>
           <button onclick="document.getElementById('diag-modal-bg').classList.add('hidden')" class="flex-1 py-1.5 bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold rounded">CLOSE</button>
         </div>`;
       document.getElementById('diag-modal-bg').classList.remove('hidden');
