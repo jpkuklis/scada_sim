@@ -1,0 +1,3718 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FACILITY ALPHA - Industrial Process Control System (SCADA)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Industrial Digital Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Share+Tech+Mono&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body { font-family: 'Inter', sans-serif; user-select: none; overflow-x: hidden; background-color: #030712; }
+    .font-digital { font-family: 'Share Tech Mono', monospace; }
+    .font-tech { font-family: 'Orbitron', sans-serif; }
+
+    .panel-bezel {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid #334155;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+    .panel-inset {
+      background: #090d16;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.8), 0 1px 0 rgba(255,255,255,0.05);
+      border: 1px solid #1e293b;
+    }
+
+    .btn-tactile { transition: all 0.08s ease; box-shadow: 0 4px 0 #0f172a, inset 0 1px 0 rgba(255,255,255,0.2); }
+    .btn-tactile:active { transform: translateY(3px); box-shadow: 0 1px 0 #0f172a, inset 0 1px 0 rgba(0,0,0,0.4); }
+
+    /* SVG Flow Conduits */
+    @keyframes pipeFlow { from { stroke-dashoffset: 40; } to { stroke-dashoffset: 0; } }
+    .pipe-flowing { stroke-dasharray: 8, 8; animation: pipeFlow 0.8s linear infinite; }
+    .pipe-danger { stroke-dasharray: 8, 8; animation: pipeFlow 0.3s linear infinite; stroke: #ef4444 !important; }
+    .pipe-steam { stroke-dasharray: 6, 6; animation: pipeFlow 0.5s linear infinite; stroke: #f59e0b !important; }
+    .pipe-elec { stroke-dasharray: 4, 4; animation: pipeFlow 0.2s linear infinite; stroke: #eab308 !important; }
+    
+    /* Rotation Physics: Center-axis spin */
+    @keyframes spinImpeller { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .spin-center {
+      animation: spinImpeller 0.6s linear infinite;
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+    }
+    .spin-slow {
+      animation: spinImpeller 2.0s linear infinite;
+      transform-box: fill-box;
+      transform-origin: 50% 50%;
+    }
+
+    /* LED Status Indicators */
+    .led-off { background-color: #334155; box-shadow: inset 0 1px 3px rgba(0,0,0,0.8); }
+    .led-green { background-color: #10b981; box-shadow: 0 0 10px #10b981, inset 0 1px 2px rgba(255,255,255,0.5); }
+    .led-amber { background-color: #f59e0b; box-shadow: 0 0 10px #f59e0b, inset 0 1px 2px rgba(255,255,255,0.5); }
+    .led-red { background-color: #ef4444; box-shadow: 0 0 10px #ef4444, inset 0 1px 2px rgba(255,255,255,0.5); }
+    .led-cyan { background-color: #06b6d4; box-shadow: 0 0 10px #06b6d4, inset 0 1px 2px rgba(255,255,255,0.5); }
+
+    @keyframes glitchRed { 0% { opacity: 0; } 50% { opacity: 0.25; } 100% { opacity: 0; } }
+    .attack-glitch { animation: glitchRed 0.8s infinite alternate; }
+    @keyframes catastrophicShake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(2px, -2px); }
+      60% { transform: translate(-2px, -2px); }
+      80% { transform: translate(2px, 2px); }
+    }
+    .catastrophic-failure { animation: catastrophicShake 0.4s infinite; filter: drop-shadow(0 0 12px #ef4444); }
+
+    .estop-guard { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); transform-origin: top center; }
+    .estop-guard.open { transform: rotateX(120deg); }
+    .interactive-equip { pointer-events: all; }
+    .interactive-equip:hover { filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.8)); transition: filter 0.2s; cursor: pointer; }
+
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #090d16; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="h-full flex flex-col overflow-x-hidden text-slate-200 relative">
+
+  <div id="attack-overlay" class="absolute inset-0 bg-red-950/40 pointer-events-none z-50 hidden attack-glitch border-4 border-red-600/50"></div>
+
+  <header class="bg-slate-900 border-b border-slate-800 px-4 py-2.5 shadow-xl flex-shrink-0 relative z-40">
+    <div class="max-w-[1920px] mx-auto flex items-center justify-between gap-4">
+      
+      <!-- LEFT: Facility Identification & Controls -->
+      <div class="flex items-center gap-5 flex-1 min-w-0">
+        
+        <!-- Facility Identification -->
+        <div class="flex items-center gap-3 flex-shrink-0">
+          <div id="header-logo" class="w-10 h-10 rounded bg-cyan-950 border border-cyan-500/40 flex items-center justify-center shadow-lg shadow-cyan-950/50 transition-colors">
+            <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <div class="hidden sm:block">
+            <h1 class="font-tech text-base sm:text-lg font-bold tracking-wider text-slate-100 uppercase">Facility Alpha</h1>
+            <p class="text-[10px] text-slate-400 font-mono flex items-center gap-2 whitespace-nowrap">
+              <span>PROCESS CONTROL SYSTEM</span>
+              <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+              <span id="sys-status-text" class="text-cyan-400 font-bold tracking-wider">NORMAL</span>
+            </p>
+          </div>
+        </div>
+
+        <!-- Navigation & Mode Controls -->
+        <div class="flex items-center gap-3 overflow-x-auto hide-scrollbar flex-shrink-0">
+          
+          <!-- Scenario Domain Selector -->
+          <div class="flex flex-col">
+            <label class="text-[9px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">DOMAIN</label>
+            <select id="scenario-selector" onchange="switchScenario(this.value)" class="bg-slate-950 border border-slate-700 text-cyan-400 font-tech text-[10px] rounded px-2 py-1 focus:outline-none cursor-pointer">
+              <option value="WATER">1. Water & Wastewater</option>
+              <option value="CHEM">2. Chemical Batch</option>
+              <option value="POWER">3. HV Power Substation</option>
+              <option value="HVAC">4. HVAC Building Auto</option>
+              <option value="OIL">5. Oil & Gas Pipeline</option>
+              <option value="FOOD">6. Food & Beverage</option>
+              <option value="CLEAN">7. Semiconductor Cleanroom</option>
+              <option value="DATA">8. Data Center CRAC</option>
+            </select>
+          </div>
+
+          <!-- Complexity Selector -->
+          <div class="flex flex-col">
+            <label class="text-[9px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">COMPLEXITY</label>
+            <div class="bg-slate-950 p-0.5 rounded border border-slate-800 flex items-center">
+              <button onclick="setComplexity('SIMPLE')" id="cmp-SIMPLE" class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 hover:text-slate-200">SIMP</button>
+              <button onclick="setComplexity('INTERMEDIATE')" id="cmp-INTERMEDIATE" class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-700 text-white font-bold shadow">INT</button>
+              <button onclick="setComplexity('ADVANCED')" id="cmp-ADVANCED" class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 hover:text-slate-200">ADV</button>
+            </div>
+          </div>
+
+          <!-- Control Mode Switch -->
+          <div class="flex flex-col">
+            <label class="text-[9px] font-mono text-slate-400 uppercase tracking-wider mb-0.5">MODE</label>
+            <div class="bg-slate-950 p-0.5 rounded border border-slate-800 flex items-center">
+              <button onclick="setControlMode('AUTO')" id="btn-mode-auto" class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-600 text-white shadow">AUTO</button>
+              <button onclick="setControlMode('MANUAL')" id="btn-mode-manual" class="px-2 py-0.5 rounded text-[10px] font-mono text-slate-400">MANUAL</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- CENTER: Hardwired Master E-STOP (Front & Center) -->
+      <div class="flex justify-center flex-shrink-0 z-50">
+        <div class="relative group transform scale-110 md:scale-125 mx-4">
+          <div id="estop-latch-cover" onclick="toggleEstopGuard()" class="estop-guard absolute inset-0 z-20 bg-amber-500/30 border-2 border-amber-500/80 rounded cursor-pointer flex items-center justify-center hover:bg-amber-500/40 backdrop-blur-sm">
+            <span class="text-[9px] font-bold font-mono text-amber-200 uppercase bg-slate-900/90 px-1.5 py-0.5 rounded border border-amber-500/50">LATCH</span>
+          </div>
+          <button onclick="triggerEstop()" class="px-5 py-2 rounded bg-gradient-to-b from-red-600 to-red-800 active:from-red-800 text-white font-tech text-sm font-black tracking-widest border border-red-400 shadow-[0_0_15px_rgba(220,38,38,0.5)] btn-tactile flex items-center gap-1">
+            E-STOP
+          </button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Tools & Clocks -->
+      <div class="flex items-center justify-end gap-3 flex-1 min-w-0">
+        
+        <!-- Utility Buttons -->
+        <div class="flex items-center gap-2 flex-wrap justify-end">
+          <button onclick="resetScenario()" class="px-2.5 py-1 rounded border border-rose-500/60 bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 font-tech text-[10px] font-bold shadow-inner transition-colors flex items-center gap-1" title="Reset scenario">
+            🔄 RESET
+          </button>
+
+          <button onclick="openSecurityMenu()" class="px-2.5 py-1 rounded border border-purple-500/60 bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 font-tech text-[10px] font-bold shadow-inner transition-colors">
+            🛡️ CYBER
+          </button>
+
+          <button onclick="openTelemetryComparisonModal()" class="px-2.5 py-1 rounded border border-amber-500/60 bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 font-tech text-[10px] font-bold shadow-inner transition-colors hidden sm:flex items-center gap-1" title="Actual vs HMI">
+            👁️ ACTUAL
+          </button>
+
+          <!-- Settings Dropdown (Gear Icon with Import/Export JSON) -->
+          <div class="relative group">
+            <button class="px-2 py-1 rounded border border-slate-600/60 bg-slate-800 hover:bg-slate-700 text-slate-300 font-tech text-[12px] font-bold transition-colors shadow-inner" title="Settings">
+              ⚙️
+            </button>
+            <div class="absolute right-0 top-full mt-2 hidden group-hover:flex bg-slate-900 border border-slate-700 rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.9)] z-50 p-1.5 flex-col gap-1 w-40 backdrop-blur-md">
+              <button onclick="exportConfig()" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-800 text-cyan-300 font-tech text-[10px] transition-colors flex items-center gap-2">
+                💾 EXPORT JSON
+              </button>
+              <button onclick="document.getElementById('import-file-input').click()" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-800 text-emerald-300 font-tech text-[10px] transition-colors flex items-center gap-2">
+                📂 IMPORT JSON
+              </button>
+            </div>
+            <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="importConfig(event)">
+          </div>
+        </div>
+
+        <!-- Live Clocks & Uptime -->
+        <div class="flex items-center gap-4 text-xs font-digital text-slate-400 border-l border-slate-800 pl-3 hidden xl:flex flex-shrink-0">
+          <div class="flex items-center gap-1.5">
+            <span class="text-[9px] text-slate-500">HEARTBEAT</span>
+            <span id="plc-heartbeat-led" class="w-2 h-2 rounded-full led-green"></span>
+          </div>
+          <div><span class="text-slate-500 block text-[9px]">SYSTEM TIME</span><span id="live-clock" class="text-cyan-400 font-semibold text-xs">--:--:--</span></div>
+          <div><span class="text-slate-500 block text-[9px]">UPTIME</span><span id="uptime-counter" class="text-slate-300 text-xs">00:00:00</span></div>
+        </div>
+
+      </div>
+
+    </div>
+  </header>
+
+  <main class="flex-1 p-3 sm:p-4 max-w-[1920px] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 overflow-y-auto">
+    
+    <!-- LEFT: CONTROLS (Dynamically Populated) -->
+    <section class="lg:col-span-3 flex flex-col gap-4 overflow-y-auto pr-1" id="left-controls"></section>
+
+    <!-- CENTER: P&ID SCHEMATIC & TREND -->
+    <section class="lg:col-span-6 flex flex-col gap-4 h-full">
+      
+      <!-- Schematic Display -->
+      <div class="panel-bezel rounded-lg p-3 flex flex-col flex-1 relative">
+        <div id="failure-banner" class="absolute top-4 left-1/2 -translate-x-1/2 bg-red-600 text-white font-tech font-bold px-4 py-1 rounded z-20 hidden animate-pulse border-2 border-white shadow-[0_0_20px_red]">
+          CRITICAL PHYSICAL RUPTURE DETECTED
+        </div>
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-2 mb-2">
+          <h2 class="font-tech text-xs font-bold text-slate-200 tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> ACTIVE SCHEMATIC (P&ID)
+          </h2>
+          <span id="scenario-title" class="text-[10px] font-mono text-cyan-400 font-bold bg-slate-900 px-2 py-0.5 rounded border border-slate-800 tracking-wider">WATER & WASTEWATER</span>
+        </div>
+        
+        <div class="panel-inset rounded relative overflow-hidden bg-slate-950 flex-1 min-h-[400px] flex items-center justify-center p-1" id="svg-container">
+          <!-- Dynamic SVG Canvas -->
+          <svg id="pid-svg" viewBox="0 0 800 420" class="w-full h-full select-none" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </div>
+
+      <!-- Live Trend Chart -->
+      <div class="panel-bezel rounded-lg p-3 flex flex-col h-56 relative">
+        <div id="trend-spoof-warning" class="absolute top-2 right-2 text-[9px] bg-red-950 border border-red-500 text-red-200 px-2 py-0.5 rounded animate-pulse hidden z-10 font-mono">
+          TELEMETRY SPOOFED BY MALWARE
+        </div>
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5 mb-1.5">
+          <h2 class="font-tech text-xs font-bold text-slate-200 tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> REAL-TIME TELEMETRY TREND
+          </h2>
+          <div class="flex items-center gap-3 text-[10px] font-mono">
+            <span class="text-cyan-400 flex items-center gap-1"><span class="w-2 h-0.5 bg-cyan-400"></span> <span id="trend-l1">PEN 1</span></span>
+            <span class="text-amber-400 flex items-center gap-1"><span class="w-2 h-0.5 bg-amber-400"></span> <span id="trend-l2">PEN 2</span></span>
+            <span class="text-emerald-400 flex items-center gap-1"><span class="w-2 h-0.5 bg-emerald-400"></span> <span id="trend-l3">PEN 3</span></span>
+            <button onclick="toggleTrendPause()" id="btn-pause-chart" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded border border-slate-700 transition-colors">PAUSE</button>
+          </div>
+        </div>
+        <div class="panel-inset rounded p-1 flex-1 relative">
+          <canvas id="trend-canvas" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- RIGHT: GAUGES, METERS & ALARMS -->
+    <section class="lg:col-span-3 flex flex-col gap-4 h-full">
+      
+      <!-- Analog Gauges -->
+      <div class="panel-bezel rounded-lg p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
+          <h2 class="font-tech text-xs font-bold text-slate-200 tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> ANALOG METRICS
+          </h2>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="panel-inset rounded p-1.5 flex flex-col items-center">
+            <span id="g1-lbl" class="text-[9px] font-mono text-slate-400">METRIC 1</span>
+            <canvas id="g1-can" width="100" height="80" class="block"></canvas>
+            <span id="g1-val" class="font-digital text-cyan-400 text-xs font-bold mt-1">0.0</span>
+          </div>
+          <div class="panel-inset rounded p-1.5 flex flex-col items-center">
+            <span id="g2-lbl" class="text-[9px] font-mono text-slate-400">METRIC 2</span>
+            <canvas id="g2-can" width="100" height="80" class="block"></canvas>
+            <span id="g2-val" class="font-digital text-amber-400 text-xs font-bold mt-1">0.0</span>
+          </div>
+          <div class="panel-inset rounded p-1.5 flex flex-col items-center">
+            <span id="g3-lbl" class="text-[9px] font-mono text-slate-400">METRIC 3</span>
+            <canvas id="g3-can" width="100" height="80" class="block"></canvas>
+            <span id="g3-val" class="font-digital text-emerald-400 text-xs font-bold mt-1">0.0</span>
+          </div>
+          <div class="panel-inset rounded p-1.5 flex flex-col items-center">
+            <span id="g4-lbl" class="text-[9px] font-mono text-slate-400">METRIC 4</span>
+            <canvas id="g4-can" width="100" height="80" class="block"></canvas>
+            <span id="g4-val" class="font-digital text-purple-400 text-xs font-bold mt-1">0.0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Electrical Bus -->
+      <div class="panel-bezel rounded-lg p-3 flex flex-col gap-2">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5">
+          <h2 class="font-tech text-xs font-bold text-slate-200 tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span> 3-PHASE ELECTRICAL BUS
+          </h2>
+        </div>
+        <div class="grid grid-cols-3 gap-1.5 font-digital">
+          <div class="panel-inset p-1.5 rounded text-center">
+            <span class="text-[8px] text-slate-500 block font-mono">VOLTS (L1-L2)</span>
+            <span id="elec-volts" class="text-xs text-cyan-400 font-bold">480.2 V</span>
+          </div>
+          <div class="panel-inset p-1.5 rounded text-center">
+            <span class="text-[8px] text-slate-500 block font-mono">LOAD CURRENT</span>
+            <span id="elec-amps" class="text-xs text-amber-400 font-bold">12.4 A</span>
+          </div>
+          <div class="panel-inset p-1.5 rounded text-center">
+            <span class="text-[8px] text-slate-500 block font-mono">FREQUENCY</span>
+            <span id="elec-freq" class="text-xs text-emerald-400 font-bold">60.00 Hz</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alarm Log -->
+      <div class="panel-bezel rounded-lg p-3 flex-1 flex flex-col min-h-[220px] max-h-[280px]">
+        <div class="flex items-center justify-between border-b border-slate-700/60 pb-1.5 mb-2 flex-shrink-0">
+          <h2 class="font-tech text-xs font-bold text-slate-200 tracking-wider flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-red-500"></span> ALARM / AUDIT LOG
+          </h2>
+          <div class="flex gap-1">
+            <button onclick="ackAlarms()" class="text-[9px] font-mono bg-amber-800/80 hover:bg-amber-700 text-amber-200 px-2 py-0.5 rounded border border-amber-600/80 btn-tactile">ACK ALL</button>
+            <button onclick="clearAlarms()" class="text-[9px] font-mono bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded border border-slate-700 btn-tactile">CLEAR</button>
+          </div>
+        </div>
+        <div id="alarm-log" class="panel-inset rounded flex-1 p-1.5 overflow-y-auto max-h-[210px] space-y-1 text-[10px] font-mono"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Context Menu overlay -->
+  <div id="ctx-menu" class="fixed hidden z-50 bg-slate-900/95 border border-slate-600 rounded-lg shadow-[0_10px_40px_rgba(0,0,0,0.9)] py-1 text-[11px] font-mono w-72 text-slate-200 overflow-hidden backdrop-blur-xl">
+    <div class="px-3 py-1.5 bg-slate-950 font-tech font-bold border-b border-slate-800 flex justify-between items-center">
+      <span class="text-cyan-400">EQUIP COMMANDS</span>
+      <span class="text-[9px] text-slate-400 bg-slate-800 px-1.5 rounded">ID: <span id="ctx-eid" class="text-white"></span></span>
+    </div>
+    <div id="ctx-body" class="py-1 divide-y divide-slate-800/60"></div>
+  </div>
+
+  <!-- Interactive Tooltip -->
+  <div id="tooltip" class="fixed pointer-events-none z-50 opacity-0 transition-opacity duration-150 bg-slate-900/95 border border-slate-600 rounded p-2.5 shadow-2xl text-[10px] font-mono min-w-[200px] backdrop-blur-md">
+    <div class="font-tech font-bold text-cyan-400 border-b border-slate-700 pb-1 mb-1 flex justify-between" id="tt-id">
+      <span>EQUIPMENT</span><span class="text-[8px] text-slate-500" id="tt-type">DEVICE</span>
+    </div>
+    <div id="tt-body" class="text-slate-300 space-y-0.5"></div>
+  </div>
+
+  <!-- Cyber Defense Modal -->
+  <div id="modal-bg" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm transition-all">
+    <div class="bg-slate-900 border border-slate-700 rounded-lg max-w-2xl w-full p-6 shadow-[0_0_50px_rgba(0,0,0,0.9)] relative">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-4">
+        <h3 class="font-tech text-base font-bold text-purple-400">🛡️ CYBER DEFENSE & OPERATOR ERRORS</h3>
+        <button onclick="document.getElementById('modal-bg').classList.add('hidden')" class="text-slate-400 hover:text-white transition-colors">✕</button>
+      </div>
+      <div id="modal-content" class="text-xs font-mono text-slate-300 space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- Diagnostics Modal -->
+  <div id="diag-modal-bg" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-slate-900 border border-slate-700 rounded-lg max-w-lg w-full p-5 shadow-2xl">
+      <div class="flex justify-between items-center border-b border-slate-700 pb-2 mb-3">
+        <h3 class="font-tech text-sm font-bold text-cyan-400" id="diag-modal-title">🩺 HEALTH & VIBRATION DIAGNOSTICS</h3>
+        <button onclick="closeDiagModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div id="diag-modal-content" class="text-xs font-mono text-slate-300 space-y-3"></div>
+    </div>
+  </div>
+
+  <div id="toasts" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    let pidAnimId = null;
+    let fftAnimId = null;
+    let fftFaultMode = 'NOMINAL'; // 'NOMINAL', 'UNBALANCE', 'BEARING_WEAR'
+    let fftCalibratedOffset = 0; // Sensor zero calibration offset
+    let preAttackSnapshot = null; // Snapshot storage to restore exact state post-attack
+
+    const SCADA = {
+      scenario: 'WATER', cmp: 'INTERMEDIATE', mode: 'AUTO',
+      estopLatch: false, estopActive: false, underAttack: false,
+      failure: false, uptime: 0, trendPaused: false,
+      loto: new Set(), faults: new Set(), bypassed: new Set(), ramps: {},
+      hist: { p1: Array(40).fill(0), p2: Array(40).fill(0), p3: Array(40).fill(0), p4: Array(40).fill(0) },
+
+      // Physics State Models
+      W: { 
+        tk1: 85, tk2: 45, tk3: 80, tk4: 90, tk5: 60, tk6: 25, 
+        p1: false, p2: false, p3: false, p4: false, p5: false, 
+        v1: 100, v2: 50, v3: 10, v4: 80, v5: 0, sis: 100, 
+        press: 35, flow: 120, turb: 0.2, doLevel: 6.8, phVal: 7.2 
+      },
+      C: { tkA: 90, tkB: 85, rx: 20, tkProd: 10, p1: false, p2: false, p3: false, h: false, ag: false, temp: 24, press: 1.0, vDis: 0 },
+      P: { cbM: true, cb1: true, cb2: false, cbTie: false, load: 45, freq: 60.00, volt: 13.8, sf6: 6.2 },
+      H: { ch1: false, ct1: false, ah1: false, p1: false, v1: 80, d1: 30, sTemp: 72, flow: 4500, rh: 48 },
+      O: { p1: false, p2: false, p3: false, v1: 100, esd: 100, tkS: 15, press: 180, flow: 0, vib: 0.1 },
+      F: { pCIP: false, hx: false, fil: false, tkCIP: 95, tkProd: 60, temp: 22, bottleCount: 0, flow: 0 },
+      CL: { f1: false, f2: false, s1: false, diff: 0, part: 450, rh: 42, temp: 68.0 },
+      D: { crac1: false, crac2: false, ups: true, gen: false, ats: 'UTIL', kw: 1150, sTemp: 72, batSoC: 99 }
+    };
+
+    // SVG Drawing Helpers
+    const SvgFactory = {
+      pipe: (path, flow, danger, color, type='FLUID') => {
+        let cls = 'pipe-flowing';
+        if (danger) cls = 'pipe-danger';
+        else if (type === 'STEAM') cls = 'pipe-steam';
+        else if (type === 'ELEC') cls = 'pipe-elec';
+        return `<path d="${path}" fill="none" stroke="#1e293b" stroke-width="8" stroke-linecap="round"/>` +
+               `<path d="${path}" fill="none" stroke="${color}" stroke-width="4" stroke-linecap="round" class="${flow?cls:''}" opacity="${flow?1:0.3}"/>`;
+      },
+      tank: (x, y, label, level, width=70, height=90, color='#0284c7') => {
+        const fluidH = (level / 100) * (height - 10);
+        const fluidY = y + (height - 5) - fluidH;
+        return `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${label}" data-type="VESSEL">` +
+               `<rect width="${width}" height="${height}" rx="6" fill="#0f172a" stroke="#334155" stroke-width="2"/>` +
+               `<rect x="3" y="${fluidY - y}" width="${width - 6}" height="${fluidH}" rx="3" fill="${color}" opacity="0.85"/>` +
+               `<text x="${width/2}" y="${height/2}" fill="#fff" font-size="11" font-family="Share Tech Mono" font-weight="bold" text-anchor="middle">${level.toFixed(0)}%</text>` +
+               `<text x="${width/2}" y="${height + 14}" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${label}</text></g>`;
+      },
+      pump: (x, y, label, running, fault, loto) => {
+        let col = '#0ea5e9';
+        if (fault) col = '#ef4444';
+        else if (running) col = '#10b981';
+        return `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${label}" data-type="PUMP">` +
+               `<circle cx="0" cy="0" r="16" fill="#0f172a" stroke="${col}" stroke-width="2.5"/>` +
+               `<g class="${running&&!fault?'spin-center':''}"><path d="M 0 0 C 4 -6, 12 -6, 10 0 C 8 6, 0 6, 0 0 M 0 0 C -6 4, -6 12, 0 10 C 6 8, 6 0, 0 0 M 0 0 C -4 6, -12 6, -10 0 C -8 -6, 0 -6, 0 0" fill="none" stroke="${col}" stroke-width="2"/></g>` +
+               (loto?`<rect x="-8" y="-8" width="16" height="16" fill="#ef4444" stroke="#fff" rx="2"/><text x="0" y="3" fill="#fff" font-size="8" font-weight="bold" text-anchor="middle">LOTO</text>`:'') +
+               `<text x="0" y="26" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${label}</text></g>`;
+      },
+      valve: (x, y, label, openPct, loto) => {
+        let col = openPct > 0 ? '#10b981' : '#ef4444';
+        return `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${label}" data-type="VALVE">` +
+               `<polygon points="-10,-8 10,8 10,-8 -10,8" fill="${col}" stroke="#0f172a" stroke-width="1.5"/>` +
+               (loto?`<rect x="-6" y="-6" width="12" height="12" fill="#ef4444" stroke="#fff" rx="2"/>`:'') +
+               `<text x="0" y="18" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${label} (${openPct}%)</text></g>`;
+      },
+      breaker: (x, y, label, closed) => {
+        let col = closed ? '#10b981' : '#ef4444';
+        return `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${label}" data-type="BREAKER">` +
+               `<rect x="-14" y="-14" width="28" height="28" fill="#0f172a" stroke="${col}" stroke-width="2" rx="4"/>` +
+               `<line x1="-8" y1="${closed?0:6}" x2="8" y2="${closed?0:-6}" stroke="${col}" stroke-width="3"/>` +
+               `<text x="0" y="24" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${label}</text></g>`;
+      },
+      fan: (x, y, label, running, fault, loto) => {
+        let col = fault ? '#ef4444' : (running ? '#10b981' : '#64748b');
+        return `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${label}" data-type="FAN">` +
+               `<circle cx="0" cy="0" r="16" fill="#0f172a" stroke="${col}" stroke-width="2"/>` +
+               `<g class="${running&&!fault?'spin-center':''}"><path d="M 0 0 C 8 -10, 14 0, 0 0 M 0 0 C -10 -8, 0 -14, 0 0 M 0 0 C -8 10, -14 0, 0 0 M 0 0 C 10 8, 0 14, 0 0" fill="${col}" stroke="${col}"/></g>` +
+               `<text x="0" y="26" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${label}</text></g>`;
+      },
+      transmitter: (x, y, label, val, unit) => {
+        return `<g transform="translate(${x}, ${y})">` +
+               `<circle cx="0" cy="0" r="12" fill="#090d16" stroke="#0284c7" stroke-width="1.5"/>` +
+               `<text x="0" y="-15" fill="#38bdf8" font-size="8" font-family="Orbitron" text-anchor="middle">${label}</text>` +
+               `<text x="0" y="3" fill="#fff" font-size="8" font-family="Share Tech Mono" font-weight="bold" text-anchor="middle">${val}</text></g>`;
+      },
+      equip: (x, y, label, svgContent, type='DEVICE') => {
+        return `<g transform="translate(${x}, ${y})" class="interactive-equip" data-equip="${label}" data-type="${type}">` +
+               `${svgContent}` +
+               `<text x="0" y="35" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">${label}</text></g>`;
+      }
+    };
+
+    function switchScenario(sc) {
+      SCADA.scenario = sc;
+      const sel = document.getElementById('scenario-selector');
+      if (sel) sel.value = sc;
+
+      const titleMap = {
+        WATER: 'WATER & WASTEWATER PLANT',
+        CHEM: 'CHEMICAL BATCH SYNTHESIS REACTOR',
+        POWER: 'HIGH-VOLTAGE POWER SUBSTATION',
+        HVAC: 'HVAC & BUILDING AUTOMATION (BAS)',
+        OIL: 'OIL & GAS PIPELINE PUMP STATION',
+        FOOD: 'FOOD & BEVERAGE CIP & BOTTLING',
+        CLEAN: 'SEMICONDUCTOR CLEANROOM FAB',
+        DATA: 'DATA CENTER POWER & CRAC UNIT'
+      };
+      const st = document.getElementById('scenario-title');
+      if (st) st.innerText = titleMap[sc] || sc;
+
+      renderControls();
+      renderSVG();
+      telemetryLoop();
+      log('SYS', `Switched active process domain to [${sc}]`, 'INFO');
+    }
+
+    function setComplexity(cmp) {
+      SCADA.cmp = cmp;
+      ['SIMPLE', 'INTERMEDIATE', 'ADVANCED'].forEach(c => {
+        const btn = document.getElementById('cmp-' + c);
+        if (btn) {
+          if (c === cmp) {
+            btn.className = 'px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-700 text-white font-bold shadow';
+          } else {
+            btn.className = 'px-2 py-0.5 rounded text-[10px] font-mono text-slate-400 hover:text-slate-200';
+          }
+        }
+      });
+      renderControls();
+      renderSVG();
+      log('SYS', `Process complexity set to [${cmp}]`, 'INFO');
+    }
+
+    function setControlMode(mode) {
+      SCADA.mode = mode;
+      const btnAuto = document.getElementById('btn-mode-auto');
+      const btnMan = document.getElementById('btn-mode-manual');
+      if (btnAuto) {
+        btnAuto.className = mode === 'AUTO' 
+          ? 'px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-600 text-white shadow'
+          : 'px-2 py-0.5 rounded text-[10px] font-mono text-slate-400';
+      }
+      if (btnMan) {
+        btnMan.className = mode === 'MANUAL'
+          ? 'px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-600 text-white shadow'
+          : 'px-2 py-0.5 rounded text-[10px] font-mono text-slate-400';
+      }
+      log('SYS', `Control mode changed to [${mode}]`, 'INFO');
+    }
+
+    function setManualState(fn) {
+      if (SCADA.mode === 'AUTO') {
+        setControlMode('MANUAL');
+        toast('Switched to MANUAL mode due to operator action');
+      }
+      fn();
+      renderSVG();
+    }
+
+    function initEvents() {
+      const svg = document.getElementById('pid-svg');
+      const tt = document.getElementById('tooltip');
+      const ctx = document.getElementById('ctx-menu');
+
+      if (svg) {
+        svg.addEventListener('mousemove', (e) => {
+          const target = e.target.closest('.interactive-equip, [data-equip]');
+          if (target && tt) {
+            const id = target.getAttribute('data-equip') || 'EQUIP';
+            const type = target.getAttribute('data-type') || 'DEVICE';
+            document.getElementById('tt-id').innerHTML = `<span>${id}</span><span class="text-[8px] text-slate-500">${type}</span>`;
+            document.getElementById('tt-body').innerHTML = `
+              <div>STATUS: <span class="text-emerald-400 font-bold">ONLINE / NOMINAL</span></div>
+              <div>LOTO: <span class="${SCADA.loto.has(id)?'text-red-400 font-bold':'text-slate-400'}">${SCADA.loto.has(id)?'LOCKED OUT':'UNLOCKED'}</span></div>
+              <div>FAULT: <span class="${SCADA.faults.has(id)?'text-red-400 font-bold':'text-slate-400'}">${SCADA.faults.has(id)?'ACTIVE':'NONE'}</span></div>
+            `;
+            tt.style.left = (e.clientX + 15) + 'px';
+            tt.style.top = (e.clientY + 15) + 'px';
+            tt.style.opacity = '1';
+          } else if (tt) {
+            tt.style.opacity = '0';
+          }
+        });
+
+        svg.addEventListener('mouseleave', () => {
+          if (tt) tt.style.opacity = '0';
+        });
+
+        svg.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          const target = e.target.closest('.interactive-equip, [data-equip]');
+          if (target && ctx) {
+            const id = target.getAttribute('data-equip') || 'EQUIP-101';
+            document.getElementById('ctx-eid').innerText = id;
+            document.getElementById('ctx-body').innerHTML = `
+              <button onclick="toggleLOTO('${id}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between">
+                <span>🔒 ${SCADA.loto.has(id)?'REMOVE LOTO TAG':'APPLY LOTO TAG'}</span>
+              </button>
+              <button onclick="toggleFault('${id}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between text-amber-400">
+                <span>⚠️ ${SCADA.faults.has(id)?'CLEAR FAULT':'INJECT HARDWARE FAULT'}</span>
+              </button>
+              <button onclick="openDiag('${id}')" class="w-full text-left px-3 py-1.5 hover:bg-slate-800 flex justify-between text-cyan-400">
+                <span>🩺 DIAGNOSTICS & FFT SPECTRUM</span>
+              </button>
+            `;
+            ctx.style.left = Math.min(e.clientX, window.innerWidth - 300) + 'px';
+            ctx.style.top = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+            ctx.classList.remove('hidden');
+          }
+        });
+      }
+
+      document.addEventListener('click', (e) => {
+        if (ctx && !ctx.contains(e.target)) {
+          ctx.classList.add('hidden');
+        }
+      });
+    }
+
+    function toggleLOTO(id) {
+      if (SCADA.loto.has(id)) {
+        SCADA.loto.delete(id);
+        toast(`LOTO Tag Removed from ${id}`);
+        log('SAFETY', `LOTO Tag removed from asset ${id}`, 'INFO');
+      } else {
+        SCADA.loto.add(id);
+        toast(`🔒 LOTO Tag Applied to ${id}`);
+        log('SAFETY', `Physical Lockout/Tagout applied to asset ${id}`, 'WARN');
+      }
+      document.getElementById('ctx-menu')?.classList.add('hidden');
+      renderSVG();
+    }
+
+    function toggleFault(id) {
+      if (SCADA.faults.has(id)) {
+        SCADA.faults.delete(id);
+        toast(`Fault Cleared for ${id}`);
+        log('MAINT', `Hardware fault cleared on ${id}`, 'INFO');
+      } else {
+        SCADA.faults.add(id);
+        toast(`⚠️ Hardware Fault Injected on ${id}`);
+        log('MAINT', `Hardware fault injected on asset ${id}`, 'CRIT');
+      }
+      document.getElementById('ctx-menu')?.classList.add('hidden');
+      renderSVG();
+    }
+
+    function closeDiagModal() {
+      document.getElementById('diag-modal-bg')?.classList.add('hidden');
+      if (fftAnimId) {
+        cancelAnimationFrame(fftAnimId);
+        fftAnimId = null;
+      }
+    }
+
+    function openTelemetryComparisonModal() {
+      const content = document.getElementById('modal-content');
+      if (!content) return;
+      content.innerHTML = `
+        <div class="space-y-3">
+          <div class="p-3 bg-slate-950 rounded border border-amber-900/60 flex justify-between items-center">
+            <div>
+              <span class="text-amber-400 font-bold block">👁️ TELEMETRY FEED AUDIT & SENSOR COMPARISON</span>
+              <span class="text-slate-400 text-[10px]">Comparing Purdue L3 HMI Telemetry Stream vs Purdue L1 Physical Field Transmitters</span>
+            </div>
+            <span id="comp-attack-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-bold ${SCADA.underAttack ? 'bg-red-950 text-red-400 border border-red-600 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-600'}">
+              ${SCADA.underAttack ? '🚨 TELEMETRY HIJACKED' : '✅ FEED SYNCHRONIZED'}
+            </span>
+          </div>
+          <div id="telemetry-comparison-table" class="space-y-2"></div>
+        </div>
+      `;
+      updateTelemetryComparison();
+      document.getElementById('modal-bg').classList.remove('hidden');
+    }
+
+    function exportConfig() {
+      const configData = {
+        timestamp: new Date().toISOString(),
+        scadaState: {
+          scenario: SCADA.scenario,
+          cmp: SCADA.cmp,
+          mode: SCADA.mode,
+          loto: Array.from(SCADA.loto),
+          faults: Array.from(SCADA.faults),
+          bypassed: Array.from(SCADA.bypassed),
+          W: SCADA.W,
+          C: SCADA.C,
+          P: SCADA.P,
+          H: SCADA.H,
+          O: SCADA.O,
+          F: SCADA.F,
+          CL: SCADA.CL,
+          D: SCADA.D
+        }
+      };
+      const jsonStr = JSON.stringify(configData, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SCADA_Config_${SCADA.scenario}_${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('💾 Exported SCADA Configuration to JSON');
+      log('SYS', 'Exported SCADA system configuration file', 'INFO');
+    }
+
+    function importConfig(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (data && data.scadaState) {
+            const s = data.scadaState;
+            SCADA.scenario = s.scenario || 'WATER';
+            SCADA.cmp = s.cmp || 'INTERMEDIATE';
+            SCADA.mode = s.mode || 'AUTO';
+            SCADA.loto = new Set(s.loto || []);
+            SCADA.faults = new Set(s.faults || []);
+            SCADA.bypassed = new Set(s.bypassed || []);
+            if (s.W) SCADA.W = s.W;
+            if (s.C) SCADA.C = s.C;
+            if (s.P) SCADA.P = s.P;
+            if (s.H) SCADA.H = s.H;
+            if (s.O) SCADA.O = s.O;
+            if (s.F) SCADA.F = s.F;
+            if (s.CL) SCADA.CL = s.CL;
+            if (s.D) SCADA.D = s.D;
+
+            switchScenario(SCADA.scenario);
+            setComplexity(SCADA.cmp);
+            setControlMode(SCADA.mode);
+            toast('📂 Successfully Loaded SCADA Configuration');
+            log('SYS', 'Imported SCADA configuration JSON state', 'INFO');
+          }
+        } catch (err) {
+          toast('❌ Failed to parse SCADA JSON file');
+          log('SYS', 'Error importing JSON configuration', 'WARN');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function toggleEstopGuard() {
+      const guard = document.getElementById('estop-latch-cover');
+      if (guard) {
+        guard.classList.toggle('open');
+        SCADA.estopLatch = guard.classList.contains('open');
+      }
+    }
+
+    function triggerEstop() {
+      if (!SCADA.estopLatch && !SCADA.estopActive) {
+        toast('⚠️ Lift the safety LATCH cover first before pressing E-STOP!');
+        return;
+      }
+      SCADA.estopActive = !SCADA.estopActive;
+      if (SCADA.estopActive) {
+        log('SAFETY', 'HARDWIRED MASTER E-STOP ENGAGED BY OPERATOR', 'CRIT');
+        toast('🚨 EMERGENCY STOP ENGAGED!');
+        const sysStatus = document.getElementById('sys-status-text');
+        if (sysStatus) {
+          sysStatus.innerText = 'E-STOPPED';
+          sysStatus.className = 'text-red-500 font-bold tracking-wider animate-pulse';
+        }
+      } else {
+        log('SAFETY', 'Master E-STOP cleared by operator', 'INFO');
+        toast('✅ Master E-STOP Cleared');
+        const sysStatus = document.getElementById('sys-status-text');
+        if (sysStatus) {
+          sysStatus.innerText = 'NORMAL';
+          sysStatus.className = 'text-cyan-400 font-bold tracking-wider';
+        }
+      }
+    }
+
+    function ackAlarms() {
+      toast('Acknowledged all active alarms.');
+      log('ALARM', 'Operator acknowledged active alarms.', 'INFO');
+    }
+
+    function clearAlarms() {
+      const logDiv = document.getElementById('alarm-log');
+      if (logDiv) logDiv.innerHTML = '';
+      toast('Alarm audit log cleared.');
+    }
+
+    function tickClock() {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0];
+      const clockElem = document.getElementById('live-clock');
+      if (clockElem) clockElem.innerText = timeStr;
+
+      SCADA.uptime++;
+      const hrs = String(Math.floor(SCADA.uptime / 3600)).padStart(2, '0');
+      const mins = String(Math.floor((SCADA.uptime % 3600) / 60)).padStart(2, '0');
+      const secs = String(SCADA.uptime % 60).padStart(2, '0');
+      const upElem = document.getElementById('uptime-counter');
+      if (upElem) upElem.innerText = `${hrs}:${mins}:${secs}`;
+
+      const led = document.getElementById('plc-heartbeat-led');
+      if (led) {
+        led.className = (now.getSeconds() % 2 === 0) ? 'w-2.5 h-2.5 rounded-full led-green' : 'w-2.5 h-2.5 rounded-full led-off';
+      }
+    }
+
+    function log(cat, msg, type = 'INFO') {
+      const logDiv = document.getElementById('alarm-log');
+      if (!logDiv) return;
+      const time = new Date().toTimeString().split(' ')[0];
+      let color = 'text-slate-300';
+      if (type === 'CRIT') color = 'text-red-400 font-bold animate-pulse';
+      else if (type === 'WARN') color = 'text-amber-400 font-bold';
+      else if (type === 'INFO') color = 'text-cyan-400';
+
+      const entry = document.createElement('div');
+      entry.className = `p-1 rounded bg-slate-900 border border-slate-800 ${color}`;
+      entry.innerText = `[${time}] [${cat}] ${msg}`;
+      logDiv.prepend(entry);
+      if (logDiv.children.length > 40) logDiv.removeChild(logDiv.lastChild);
+    }
+
+    function toast(msg) {
+      const container = document.getElementById('toasts');
+      if (!container) return;
+      const t = document.createElement('div');
+      t.className = 'bg-slate-900/95 border border-cyan-500/60 text-cyan-200 px-3 py-2 rounded shadow-2xl text-xs font-mono pointer-events-auto backdrop-blur-md transition-all duration-300';
+      t.innerText = msg;
+      container.appendChild(t);
+      setTimeout(() => {
+        t.style.opacity = '0';
+        setTimeout(() => t.remove(), 300);
+      }, 2500);
+    }
+
+    function drawGauge(id, val, min, max, col) {
+      const can = document.getElementById(id);
+      if (!can) return;
+      const ctx = can.getContext('2d');
+      const w = can.width, h = can.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const cx = w / 2, cy = h * 0.8, r = w * 0.35;
+      ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, 2 * Math.PI); ctx.lineWidth = 6; ctx.strokeStyle = '#1e293b'; ctx.stroke();
+
+      const pct = Math.max(0, Math.min(1, (val - min) / (max - min)));
+      const angle = Math.PI + (pct * Math.PI);
+
+      ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI, angle); ctx.lineWidth = 6; ctx.strokeStyle = col; ctx.stroke();
+
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle + Math.PI / 2);
+      ctx.beginPath(); ctx.moveTo(-2, 0); ctx.lineTo(0, -r + 4); ctx.lineTo(2, 0); ctx.fillStyle = '#f8fafc'; ctx.fill();
+      ctx.restore();
+
+      ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 2 * Math.PI); ctx.fillStyle = '#94a3b8'; ctx.fill();
+    }
+
+    function drawTrend() {
+      const can = document.getElementById('trend-canvas');
+      if (!can) return;
+      const parent = can.parentElement;
+      if (parent && (can.width !== parent.clientWidth || can.height !== parent.clientHeight)) {
+        can.width = parent.clientWidth;
+        can.height = parent.clientHeight;
+      }
+      const ctx = can.getContext('2d');
+      const w = can.width, h = can.height;
+      if (w === 0 || h === 0) return;
+      ctx.clearRect(0, 0, w, h);
+
+      ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1;
+      for (let y = 0; y < h; y += 25) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+      const renderPen = (data, col) => {
+        ctx.beginPath(); ctx.strokeStyle = col; ctx.lineWidth = 2;
+        const step = w / (data.length - 1);
+        data.forEach((v, i) => {
+          const x = i * step;
+          const y = h - (v * (h - 20) + 10);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+      };
+
+      renderPen(SCADA.hist.p1, '#38bdf8');
+      renderPen(SCADA.hist.p2, '#f59e0b');
+      renderPen(SCADA.hist.p3, '#10b981');
+    }
+
+    function toggleTrendPause() {
+      SCADA.trendPaused = !SCADA.trendPaused;
+      const btn = document.getElementById('btn-pause-chart');
+      if (btn) btn.innerText = SCADA.trendPaused ? 'RESUME' : 'PAUSE';
+    }
+
+    function triggerFail(reason) {
+      SCADA.failure = true;
+      log('ALARM', `CATASTROPHIC FAILURE: ${reason}`, 'CRIT');
+      toast(`🔥 CATASTROPHIC FAILURE: ${reason}`);
+
+      const banner = document.getElementById('failure-banner');
+      if (banner) {
+        banner.innerText = `CRITICAL FAILURE: ${reason.toUpperCase()}`;
+        banner.classList.remove('hidden');
+      }
+
+      const svgC = document.getElementById('svg-container');
+      if (svgC) svgC.classList.add('catastrophic-failure');
+
+      const sysStatus = document.getElementById('sys-status-text');
+      if (sysStatus) {
+        sysStatus.innerText = 'FAILURE';
+        sysStatus.className = 'text-red-500 font-bold tracking-wider animate-pulse';
+      }
+    }
+
+    function applyStuxnet() {
+      const sc = SCADA.scenario;
+      if (sc === 'WATER') {
+        SCADA.W.p5 = true;
+        SCADA.W.v4 = 100;
+        SCADA.W.sis = 0;
+        SCADA.W.v5 = 0;
+        SCADA.W.press = Math.min(250, SCADA.W.press + 4.5);
+        if (SCADA.W.press > 210 && !SCADA.failure) triggerFail('Wastewater Main Pressure Rupture (Stuxnet Malware Override)');
+      } else if (sc === 'CHEM') {
+        SCADA.C.h = true;
+        SCADA.C.vDis = 0;
+        SCADA.C.temp = Math.min(180, SCADA.C.temp + 2.5);
+        SCADA.C.press = 1.0 + ((SCADA.C.temp - 24) * 0.08);
+        if (SCADA.C.press > 14 && !SCADA.failure) triggerFail('Chemical Reactor Overpressure Explosion (Thermal Runaway)');
+      } else if (sc === 'OIL') {
+        SCADA.O.p1 = true; SCADA.O.p2 = true; SCADA.O.v1 = 0; SCADA.O.esd = 0;
+        SCADA.O.press = Math.min(800, SCADA.O.press + 15);
+        if (SCADA.O.press > 650 && !SCADA.failure) triggerFail('Oil Pipeline Rupture (Exceeded MAOP Limit)');
+      } else if (sc === 'DATA') {
+        SCADA.D.crac1 = false; SCADA.D.crac2 = false;
+        SCADA.D.sTemp = Math.min(130, SCADA.D.sTemp + 1.2);
+        if (SCADA.D.sTemp > 108 && !SCADA.failure) triggerFail('Thermal Runaway in Server Hall (HVAC CRAC Failure)');
+      }
+    }
+
+    window.onload = () => {
+      switchScenario('WATER');
+      initEvents();
+      setInterval(tickClock, 1000);
+      setInterval(physicsLoop, 200);
+      setInterval(telemetryLoop, 1000);
+      log('SYS', 'SCADA Host Controller Booted. Initializing Purdue Level 2 PLC Interlocks...', 'INFO');
+    };
+
+    function runAutoControlLogic() {
+      const s = SCADA.scenario;
+      const c = SCADA.cmp;
+
+      if (s === 'WATER') {
+        let w = SCADA.W;
+        if (w.tk2 < 60 && w.tk1 > 5) {
+          w.p1 = true;
+          w.v1 = 100;
+          if (c !== 'SIMPLE') w.p3 = true;
+        } else if (w.tk2 >= 90 || w.tk1 <= 2) {
+          w.p1 = false;
+          if (c !== 'SIMPLE') w.p3 = false;
+        }
+        if (c !== 'SIMPLE' && w.tk2 < 30 && w.tk1 > 5) {
+          w.p2 = true;
+        } else if (w.tk2 > 75) {
+          w.p2 = false;
+        }
+
+        if (w.doLevel < 6.0) w.v2 = Math.min(100, w.v2 + 5);
+        else if (w.doLevel > 8.0) w.v2 = Math.max(10, w.v2 - 5);
+
+        if (c !== 'SIMPLE' && w.tk3 > 70) {
+          w.p4 = true;
+          w.v3 = 30;
+        } else if (w.tk3 < 40) {
+          w.p4 = false;
+          w.v3 = 5;
+        }
+
+        if (c === 'ADVANCED') {
+          w.sis = 100;
+          w.v5 = 0;
+          if (w.tk5 < 40 && w.tk4 > 10) {
+            w.p5 = true;
+            w.v4 = 85;
+          } else if (w.tk5 > 85 || w.tk4 < 5) {
+            w.p5 = false;
+          }
+        }
+      } 
+      else if (s === 'CHEM') {
+        let chem = SCADA.C;
+        if (chem.rx < 75 && chem.tkA > 5) chem.p1 = true; else chem.p1 = false;
+        if (c === 'ADVANCED' && chem.rx < 75 && chem.tkB > 5) chem.p2 = true; else chem.p2 = false;
+        chem.ag = chem.rx > 10;
+        if (chem.temp < 60 && chem.rx > 15) chem.h = true; else if (chem.temp >= 68) chem.h = false;
+        if (chem.rx > 80 && chem.temp >= 60) chem.vDis = 60; else if (chem.rx < 10) chem.vDis = 0;
+      }
+      else if (s === 'POWER') {
+        let p = SCADA.P; p.cbM = true; p.cb1 = true;
+        if (c !== 'SIMPLE') p.cb2 = true;
+        if (c === 'ADVANCED') p.cbTie = false;
+      }
+      else if (s === 'HVAC') {
+        let h = SCADA.H; h.ah1 = true; h.d1 = 30;
+        if (h.sTemp > 74) {
+          if (c !== 'SIMPLE') { h.ch1 = true; h.p1 = true; }
+          if (c === 'ADVANCED') h.ct1 = true;
+          h.v1 = Math.min(100, h.v1 + 5);
+        } else if (h.sTemp < 68) {
+          if (c !== 'SIMPLE') { h.ch1 = false; h.p1 = false; }
+          if (c === 'ADVANCED') h.ct1 = false;
+          h.v1 = Math.max(20, h.v1 - 5);
+        }
+      }
+      else if (s === 'OIL') {
+        let o = SCADA.O; o.esd = 100;
+        if (o.press < 150 && o.tkS < 90) {
+          o.p1 = true; if (c !== 'SIMPLE') o.p2 = true;
+          o.v1 = Math.min(100, o.v1 + 5);
+        } else if (o.press > 240) {
+          o.v1 = Math.max(30, o.v1 - 5);
+          if (c !== 'SIMPLE' && o.press > 280) o.p2 = false;
+        }
+      }
+      else if (s === 'FOOD') {
+        let f = SCADA.F;
+        if (f.tkProd > 5) { f.fil = true; if (c !== 'SIMPLE') f.hx = true; } 
+        else { f.fil = false; if (c !== 'SIMPLE') f.hx = false; if (c === 'ADVANCED' && f.tkCIP > 10) f.pCIP = true; }
+        if (f.tkCIP <= 5) f.pCIP = false;
+      }
+      else if (s === 'CLEAN') {
+        let cl = SCADA.CL; cl.f1 = true;
+        if (c !== 'SIMPLE') cl.f2 = true;
+        if (c === 'ADVANCED' && cl.part > 300) cl.s1 = true; else if (c === 'ADVANCED' && cl.part < 100) cl.s1 = false;
+      }
+      else if (s === 'DATA') {
+        let d = SCADA.D; d.ups = true; d.crac1 = true;
+        if (c !== 'SIMPLE' && d.sTemp > 73) d.crac2 = true; else if (c !== 'SIMPLE' && d.sTemp < 68) d.crac2 = false;
+      }
+
+      if (document.activeElement.tagName !== 'INPUT') {
+        renderControls();
+      }
+    }
+
+    function physicsLoop() {
+      if (SCADA.estopActive && !SCADA.underAttack) return;
+      if (SCADA.underAttack) { applyStuxnet(); renderSVG(); return; }
+
+      if (SCADA.mode === 'AUTO') {
+        runAutoControlLogic();
+      }
+
+      const c = SCADA.cmp;
+      
+      if (SCADA.scenario === 'WATER') {
+        let w = SCADA.W;
+        w.tk1 = Math.min(100, w.tk1 + 0.08);
+
+        let pLift = (w.p1 && !SCADA.faults.has('P-101')) || (c !== 'SIMPLE' && w.p2 && !SCADA.faults.has('P-102'));
+        if (pLift && w.v1 > 0 && w.tk1 > 0 && w.tk2 < 100) {
+          let transfer = Math.min(0.20 * (w.v1/100) * (w.p1 && w.p2 ? 1.6 : 1.0), w.tk1);
+          w.tk1 -= transfer;
+          w.tk2 += transfer;
+          w.flow = transfer * 800;
+        } else {
+          w.flow = 0;
+        }
+
+        if (w.v2 > 0) w.doLevel = Math.min(10.0, w.doLevel + (w.v2 / 100) * 0.15);
+        else w.doLevel = Math.max(1.0, w.doLevel - 0.05);
+
+        if (w.p3 && !SCADA.faults.has('P-103')) w.turb = Math.max(0.05, w.turb - 0.02);
+        else w.turb = Math.min(4.8, w.turb + 0.01);
+
+        if (w.tk2 > 20 && w.tk3 < 100) {
+          let flowCal = 0.12;
+          w.tk2 -= flowCal;
+          w.tk3 += flowCal;
+        }
+        if (w.tk3 > 20 && w.tk4 < 100) {
+          let flowDis = 0.10;
+          w.tk3 -= flowDis;
+          w.tk4 += flowDis;
+        }
+
+        if (c !== 'SIMPLE' && w.p4 && !SCADA.faults.has('P-104') && w.tk3 > 5) {
+          let sludgeTrans = 0.08;
+          w.tk3 -= sludgeTrans;
+          w.tk6 = Math.min(100, w.tk6 + sludgeTrans);
+        }
+
+        let pEffluent = (c === 'ADVANCED' && w.p5 && !SCADA.faults.has('P-105'));
+        if (pEffluent) {
+          if (w.v4 > 0 && w.sis > 0 && w.tk4 > 0 && w.tk5 < 100) {
+            let effTransfer = Math.min(0.22 * (w.v4/100) * (w.sis/100), w.tk4);
+            w.tk4 -= effTransfer;
+            w.tk5 += effTransfer;
+            w.press = 40 + (effTransfer * 250) + (Math.random()*1.5);
+          } else {
+            if (w.tk5 >= 100 || w.v4 === 0 || w.sis === 0) {
+              w.press += 6.0;
+            }
+          }
+        } else {
+          w.press = Math.max(15, w.press - 3.0);
+        }
+
+        if (w.press > 210 && !SCADA.failure) triggerFail('Wastewater Main Pressure Rupture (Deadhead)');
+      }
+      else if (SCADA.scenario === 'CHEM') {
+        let chem = SCADA.C;
+        chem.tkA = Math.min(100, chem.tkA + 0.03);
+        if (chem.p1 && !SCADA.faults.has('P-201A') && chem.tkA > 0 && chem.rx < 100) { chem.tkA -= 0.12; chem.rx += 0.12; }
+        if (c !== 'SIMPLE' && chem.p2 && !SCADA.faults.has('P-201B') && chem.tkB > 0 && chem.rx < 100) { chem.tkB -= 0.12; chem.rx += 0.12; }
+        if (chem.vDis > 0 && chem.rx > 0) {
+          let dis = (chem.vDis/100) * 0.2;
+          chem.rx = Math.max(0, chem.rx - dis);
+          chem.tkProd = Math.min(100, chem.tkProd + dis);
+        }
+        if (chem.h && chem.rx > 0) chem.temp += 0.45; else chem.temp = Math.max(24, chem.temp - 0.15);
+        chem.press = 1.0 + ((chem.temp - 24) * 0.06);
+        if (chem.press > 14 && !SCADA.failure) triggerFail('Reactor Overpressure Explosion (Thermal Runaway)');
+      }
+      else if (SCADA.scenario === 'POWER') {
+        let p = SCADA.P;
+        let onlineCap = p.cbM ? 100 : 0;
+        let actualLoad = (p.cb1 ? 40 : 0) + ((c!=='SIMPLE' && p.cb2) ? 40 : 0);
+        p.load = p.cbM ? actualLoad : 0;
+        p.freq = p.cbM ? (actualLoad > onlineCap ? 59.1 : 60 + (Math.random()-0.5)*0.04) : 0;
+        p.volt = p.cbM ? 13.8 - (p.load * 0.01) : 0;
+      }
+      else if (SCADA.scenario === 'HVAC') {
+        let h = SCADA.H;
+        h.sTemp = Math.min(88, h.sTemp + 0.08);
+        if (h.ah1 && !SCADA.faults.has('AHU-1')) {
+          h.flow = (h.v1/100) * 8500;
+          let coolPwr = h.ch1 ? 2.5 : 0;
+          h.sTemp = Math.max(54, h.sTemp - coolPwr + 0.15); 
+        } else {
+          h.flow = 0; h.sTemp = Math.min(88, h.sTemp + 0.2);
+        }
+      }
+      else if (SCADA.scenario === 'OIL') {
+        let o = SCADA.O;
+        let pOn = (o.p1 && !SCADA.faults.has('P-Main')) || (c!=='SIMPLE' && o.p2);
+        if (pOn) {
+          if (o.v1 > 0 && o.esd > 0) {
+            o.flow = (o.v1/100) * 650; o.press = 160 + (o.flow * 0.1); o.tkS = Math.max(5, o.tkS - 0.1);
+          } else {
+            o.flow = 0; o.press += 12;
+            if (c === 'ADVANCED' && o.press > 320) o.tkS = Math.min(100, o.tkS + 0.6);
+          }
+        } else { o.flow = 0; o.press = Math.max(50, o.press - 6); }
+        if (o.press > 650 && !SCADA.failure) triggerFail('Oil Pipeline Rupture (Exceeded MAOP Limit)');
+      }
+      else if (SCADA.scenario === 'FOOD') {
+        let f = SCADA.F;
+        if (f.hx) f.temp = Math.min(85, f.temp + 0.6); else f.temp = Math.max(20, f.temp - 0.25);
+        if (f.fil && !SCADA.faults.has('M-FIL')) {
+          if (f.tkProd > 0) { f.tkProd -= 0.08; f.bottleCount += 2; }
+        }
+        if (f.pCIP && f.tkCIP > 0) f.tkCIP -= 0.03;
+      }
+      else if (SCADA.scenario === 'CLEAN') {
+        let cl = SCADA.CL;
+        let fanPwr = (cl.f1 ? 1 : 0) + ((c!=='SIMPLE' && cl.f2) ? 1 : 0);
+        cl.diff = fanPwr * 50;
+        if (fanPwr > 0) cl.part = Math.max(12, cl.part - 6); else cl.part = Math.min(2200, cl.part + 12);
+      }
+      else if (SCADA.scenario === 'DATA') {
+        let d = SCADA.D;
+        let cool = (d.crac1 ? 1 : 0) + ((c!=='SIMPLE' && d.crac2) ? 1 : 0);
+        if (d.ups) {
+          d.sTemp = Math.max(65, d.sTemp - (cool * 0.6) + 0.25); 
+          d.kw = 1200 + (cool * 180);
+        } else {
+          d.kw = 0; d.sTemp += 0.6;
+        }
+        if (d.sTemp > 108 && !SCADA.failure) triggerFail('Thermal Runaway in Server Hall (HVAC CRAC Failure)');
+      }
+
+      renderSVG();
+    }
+
+    function renderSVG() {
+      const svg = document.getElementById('pid-svg');
+      if(!svg) return;
+      const sc = SCADA.scenario, c = SCADA.cmp, f = SvgFactory, att = SCADA.underAttack;
+      let h = '';
+
+      if (sc === 'WATER') {
+        let w = SCADA.W, flow = w.flow > 0;
+        h += f.pipe("M 80 180 L 160 180", flow, att||w.press>150, '#38bdf8');
+        h += f.pipe("M 160 180 L 260 180 L 260 250 L 320 250", flow, att||w.press>150, '#38bdf8');
+        h += f.pipe("M 380 250 L 460 250", true, false, '#0ea5e9');
+        h += f.pipe("M 520 250 L 600 250", true, false, '#38bdf8');
+        h += f.pipe("M 660 250 L 720 250", w.p5, w.press>180, '#10b981');
+
+        h += f.tank(20, 110, "TK-101 (RAW INTAKE)", w.tk1, 65, 90, '#0284c7');
+        h += f.tank(190, 110, "TK-102 (AERATION)", w.tk2, 70, 90, '#0369a1');
+        h += f.tank(320, 170, "TK-103 (CLARIFIER)", w.tk3, 65, 80, '#0e7490');
+        h += f.tank(460, 170, "TK-104 (CHLORINE)", w.tk4, 60, 80, '#06b6d4');
+        h += f.tank(600, 170, "TK-105 (EFFLUENT)", w.tk5, 60, 80, '#10b981');
+
+        if (w.v2 > 0) {
+          h += `<circle cx="210" cy="170" r="3" fill="#60a5fa" opacity="0.8"><animate attributeName="cy" values="180;130" dur="1s" repeatCount="indefinite"/></circle>`;
+          h += `<circle cx="230" cy="175" r="4" fill="#60a5fa" opacity="0.7"><animate attributeName="cy" values="185;135" dur="0.8s" repeatCount="indefinite"/></circle>`;
+        }
+
+        h += `<g transform="translate(352, 210)"><line x1="0" y1="0" x2="0" y2="25" stroke="#94a3b8" stroke-width="2"/><g class="spin-slow"><line x1="-20" y1="25" x2="20" y2="25" stroke="#cbd5e1" stroke-width="3"/></g></g>`;
+
+        h += f.pump(120, 180, "P-101", w.p1, SCADA.faults.has('P-101'), SCADA.loto.has('P-101'));
+        h += f.valve(210, 180, "V-101", w.v1, SCADA.loto.has('V-101'));
+        
+        if (c !== 'SIMPLE') {
+          h += f.pipe("M 120 180 L 120 230 L 210 230 M 210 230 L 260 180", w.p2, false, '#38bdf8');
+          h += f.pump(160, 230, "P-102", w.p2, SCADA.faults.has('P-102'), SCADA.loto.has('P-102'));
+          
+          h += f.tank(260, 40, "DOSING", w.tk3, 50, 50, '#10b981');
+          h += f.pipe("M 285 90 L 285 180", w.p3, false, '#10b981');
+          h += f.pump(285, 130, "P-103", w.p3, SCADA.faults.has('P-103'), false);
+
+          h += f.tank(320, 310, "TK-106 (SLUDGE)", w.tk6, 65, 60, '#78350f');
+          h += f.pipe("M 352 250 L 352 310", w.p4, false, '#92400e');
+          h += f.pump(352, 280, "P-104", w.p4, SCADA.faults.has('P-104'), false);
+          h += f.valve(380, 250, "V-103", w.v3, false);
+        }
+
+        if (c === 'ADVANCED') {
+          h += f.pump(660, 250, "P-105", w.p5, SCADA.faults.has('P-105'), false);
+          h += f.valve(500, 250, "V-104", w.v4, false);
+          h += f.valve(570, 250, "SIS-101", w.sis, SCADA.loto.has('SIS-101'));
+          h += f.pipe("M 460 250 L 460 310 L 600 310 L 600 250", w.v5>0, false, '#0ea5e9');
+          h += f.valve(530, 310, "V-105 (BYP)", w.v5, false);
+          h += f.transmitter(680, 190, "AT-101", w.turb.toFixed(2)+" NTU", "");
+          h += f.transmitter(230, 80, "DO-101", w.doLevel.toFixed(1)+" mg/L", "");
+        }
+      }
+      else if (sc === 'CHEM') {
+        let ch = SCADA.C;
+        h += f.tank(330, 140, "RX-201", ch.rx, 140, 120, '#d97706');
+        h += `<g transform="translate(400, 200)" class="interactive-equip" data-equip="AG-1" data-type="MOTOR"><circle cx="0" cy="0" r="14" fill="#0f172a" stroke="#64748b"/><g class="${ch.ag?'spin-center':''}"><path d="M -18 0 L 18 0 M 0 -18 L 0 18" stroke="#cbd5e1" stroke-width="2.5"/></g><text x="0" y="26" fill="#94a3b8" font-size="8" font-family="Orbitron" text-anchor="middle">AG-101</text></g>`;
+        if (ch.h) h += `<rect x="325" y="135" width="150" height="130" fill="none" stroke="#ef4444" stroke-width="3" rx="6" stroke-dasharray="4,4"/>`;
+        h += f.pipe("M 400 260 L 400 320 L 600 320", ch.vDis>0, false, '#d97706');
+        h += f.valve(500, 320, "V-DIS", ch.vDis, false);
+        h += f.transmitter(380, 120, "TT-201", ch.temp.toFixed(1)+"C", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.pipe("M 150 140 L 330 140", ch.p1, false, '#10b981');
+          h += f.tank(70, 90, "TK-A", ch.tkA, 80, 80, '#10b981');
+          h += f.pump(220, 140, "P-A", ch.p1, SCADA.faults.has('P-A'), SCADA.loto.has('P-A'));
+          h += f.tank(650, 260, "PROD", ch.tkProd, 90, 100, '#d97706');
+        }
+        if (c === 'ADVANCED') {
+          h += f.pipe("M 650 140 L 470 140", ch.p2, false, '#8b5cf6');
+          h += f.tank(650, 90, "TK-B", ch.tkB, 80, 80, '#8b5cf6');
+          h += f.pump(560, 140, "P-B", ch.p2, false, false);
+          h += f.transmitter(430, 120, "PT-201", ch.press.toFixed(1)+"Bar", "");
+        }
+      }
+      else if (sc === 'POWER') {
+        let p = SCADA.P;
+        h += f.pipe("M 100 200 L 700 200", p.cbM, false, '#eab308', 'ELEC');
+        h += f.breaker(150, 200, "CB-MAIN", p.cbM);
+        h += `<g transform="translate(300, 200)"><circle cx="-12" cy="0" r="16" fill="none" stroke="#eab308" stroke-width="3"/><circle cx="12" cy="0" r="16" fill="none" stroke="#eab308" stroke-width="3"/><text x="0" y="32" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">TX-101 (115kV/13.8kV)</text></g>`;
+        h += f.transmitter(400, 170, "VT-301", p.volt.toFixed(1)+"kV", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.pipe("M 450 200 L 450 300", p.cb1, false, '#eab308', 'ELEC');
+          h += f.breaker(450, 250, "CB-F1", p.cb1);
+        }
+        if (c === 'ADVANCED') {
+          h += f.pipe("M 580 200 L 580 300", p.cb2, false, '#eab308', 'ELEC');
+          h += f.breaker(580, 250, "CB-F2", p.cb2);
+          h += f.breaker(640, 200, "CB-TIE", p.cbTie);
+          h += f.transmitter(300, 140, "PT-301", p.sf6.toFixed(1)+"Bar", "");
+        }
+      }
+      else if (sc === 'HVAC') {
+        let hv = SCADA.H;
+        h += `<rect x="250" y="150" width="300" height="100" fill="#070a12" stroke="#334155" stroke-width="2" rx="4"/>`;
+        h += f.fan(500, 200, "AHU-1", hv.ah1, SCADA.faults.has('AHU-1'), SCADA.loto.has('AHU-1'));
+        h += f.pipe("M 150 200 L 250 200", hv.ah1, false, '#38bdf8');
+        h += f.pipe("M 550 200 L 680 200", hv.ah1, false, '#38bdf8');
+        h += f.valve(200, 200, "DMP-OA", hv.d1, false);
+        h += f.transmitter(600, 170, "TT-401", hv.sTemp.toFixed(1)+"F", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.equip(320, 200, "CH-1", `<rect width="60" height="50" fill="#0f172a" stroke="#38bdf8" rx="3"/><text x="30" y="30" fill="${hv.ch1?'#38bdf8':'#475569'}" font-size="8" font-family="Orbitron" text-anchor="middle">CHILLER</text>`, 'CHILLER');
+          h += f.pump(350, 320, "P-CHW", hv.p1, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.fan(100, 200, "CT-101", hv.ct1, false, false);
+          h += f.transmitter(420, 170, "RH-401", hv.rh.toFixed(0)+"%", "");
+        }
+      }
+      else if (sc === 'OIL') {
+        let o = SCADA.O;
+        h += f.pipe("M 80 220 L 720 220", o.flow>0, att||o.press>300, '#d97706');
+        h += f.valve(140, 220, "ESD-101", o.esd, false);
+        h += f.pump(280, 220, "P-MAIN", o.p1, SCADA.faults.has('P-Main'), SCADA.loto.has('P-Main'));
+        h += f.valve(480, 220, "PCV-501", o.v1, false);
+        h += f.transmitter(380, 190, "PT-501", o.press.toFixed(0)+"PSI", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.pipe("M 200 220 L 200 300 L 360 300 L 360 220", o.p2, false, '#d97706');
+          h += f.pump(280, 300, "P-BOOST", o.p2, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.tank(580, 80, "SURGE", o.tkS, 80, 90, '#d97706');
+          h += f.pipe("M 520 220 L 520 130 L 580 130", o.press>300, false, '#d97706');
+          h += f.transmitter(280, 170, "VT-501", o.vib.toFixed(2)+"G", "");
+        }
+      }
+      else if (sc === 'FOOD') {
+        let fd = SCADA.F;
+        h += f.tank(100, 120, "TK-PROD", fd.tkProd, 80, 110, '#fde047');
+        h += `<g transform="translate(360,230)"><rect width="100" height="50" fill="#0f172a" stroke="#10b981" rx="4"/><text x="50" y="30" fill="${fd.fil?'#10b981':'#475569'}" font-size="9" font-family="Orbitron" text-anchor="middle">FILLER CAROUSEL</text></g>`;
+        h += f.pipe("M 180 230 L 360 230", fd.fil, false, '#fde047');
+        h += f.transmitter(480, 210, "CT-601", fd.bottleCount+" BTL", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.equip(250, 180, "HX-601", `<rect width="60" height="60" fill="#0f172a" stroke="${fd.hx?'#ef4444':'#64748b'}" rx="4"/><text x="30" y="35" fill="#fff" font-size="8" font-family="Orbitron" text-anchor="middle">PAST HX</text>`, 'HEATER');
+          h += f.transmitter(280, 150, "TT-601", fd.temp.toFixed(1)+"C", "");
+        }
+        if (c === 'ADVANCED') {
+          h += f.tank(580, 80, "CIP-TANK", fd.tkCIP, 80, 100, '#06b6d4');
+          h += f.pump(500, 130, "P-CIP", fd.pCIP, false, false);
+          h += f.pipe("M 580 130 L 310 130 M 250 180 L 250 130", fd.pCIP, false, '#06b6d4');
+        }
+      }
+      else if (sc === 'CLEAN') {
+        let cl = SCADA.CL;
+        h += `<rect x="180" y="120" width="440" height="200" fill="none" stroke="#38bdf8" stroke-dasharray="8 4" rx="6"/>`;
+        h += `<text x="400" y="140" fill="#38bdf8" font-size="10" font-family="Orbitron" text-anchor="middle">CLASS 1 FAB ENCLOSURE</text>`;
+        h += f.fan(280, 120, "FFU-101", cl.f1, false, false);
+        h += f.transmitter(400, 220, "DPT-701", cl.diff.toFixed(0)+"Pa", "");
+        h += f.transmitter(480, 220, "PRT-701", cl.part+" P/M3", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.fan(480, 120, "FFU-102", cl.f2, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.fan(620, 220, "SCRUBBER", cl.s1, false, false);
+          h += f.pipe("M 620 220 L 720 220", cl.s1, false, '#a855f7');
+        }
+      }
+      else if (sc === 'DATA') {
+        let d = SCADA.D;
+        h += `<g transform="translate(340, 140)"><rect width="120" height="160" fill="#0f172a" stroke="#64748b" rx="4"/><text x="60" y="85" fill="#fff" font-size="9" font-family="Orbitron" text-anchor="middle">SERVER RACKS</text></g>`;
+        h += f.fan(240, 220, "CRAC-1", d.crac1, false, false);
+        h += f.transmitter(400, 110, "TT-801", d.sTemp.toFixed(1)+"F", "");
+        h += f.transmitter(400, 320, "KW-801", d.kw+"kW", "");
+        
+        if (c !== 'SIMPLE') {
+          h += f.fan(560, 220, "CRAC-2", d.crac2, false, false);
+        }
+        if (c === 'ADVANCED') {
+          h += f.equip(100, 120, "UPS-101", `<rect width="70" height="50" fill="${d.ups?'#10b981':'#ef4444'}" rx="4"/><text x="35" y="30" fill="#fff" font-size="8" font-family="Orbitron" text-anchor="middle">UPS BAT</text>`, 'PWR');
+          h += f.transmitter(135, 90, "SOC-1", d.batSoC+"%", "");
+        }
+      }
+      svg.innerHTML = h;
+    }
+
+    function renderControls() {
+      const pane = document.getElementById('left-controls');
+      if(!pane) return;
+      const sc = SCADA.scenario, c = SCADA.cmp;
+      let h = '';
+
+      const btn = (lbl, on, off, state) => `
+        <div class="flex gap-1 mt-2">
+          <button onclick="setManualState(function(){ ${on} })" class="flex-1 py-1.5 rounded text-[10px] font-bold ${state ? 'bg-emerald-600 text-white border-emerald-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] font-black' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'} border btn-tactile flex items-center justify-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full ${state ? 'bg-white animate-pulse' : 'bg-slate-600'}"></span>
+            ON / OPEN
+          </button>
+          <button onclick="setManualState(function(){ ${off} })" class="flex-1 py-1.5 rounded text-[10px] font-bold ${!state ? 'bg-rose-700 text-white border-rose-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)] font-black' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'} border btn-tactile flex items-center justify-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full ${!state ? 'bg-white' : 'bg-slate-600'}"></span>
+            OFF / CLOSE
+          </button>
+        </div>`;
+      
+      const sld = (lbl, val, setterFn) => `
+        <div class="mt-2 text-[10px] text-slate-300 flex justify-between font-mono"><span>${lbl}</span><span class="text-cyan-400 font-bold">${val}%</span></div>
+        <input type="range" min="0" max="100" value="${val}" oninput="setManualState(function(){ ${setterFn}(parseInt(event.target.value)); })" class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer accent-cyan-400 mt-1">`;
+      
+      const bzl = (title, inner, col='cyan') => `<div class="panel-bezel p-3 rounded-lg"><h3 class="font-tech text-xs font-bold text-${col}-400 mb-2 border-b border-slate-700 pb-1">${title}</h3>${inner}</div>`;
+
+      if (sc === 'WATER') {
+        h += bzl('INTAKE LIFT PUMP [P-101]', btn('P1', `SCADA.W.p1=true`, `SCADA.W.p1=false`, SCADA.W.p1));
+        h += bzl('INTAKE SLUICE GATE [V-101]', sld('Position', SCADA.W.v1, 'val => SCADA.W.v1 = val'));
+        if (c !== 'SIMPLE') {
+          h += bzl('STANDBY LIFT PUMP [P-102]', btn('P2', `SCADA.W.p2=true`, `SCADA.W.p2=false`, SCADA.W.p2));
+          h += bzl('COAGULANT DOSING [P-103]', btn('P3', `SCADA.W.p3=true`, `SCADA.W.p3=false`, SCADA.W.p3));
+          h += bzl('SLUDGE RETURN [P-104]', btn('P4', `SCADA.W.p4=true`, `SCADA.W.p4=false`, SCADA.W.p4));
+          h += bzl('SLUDGE BLOWDOWN [V-103]', sld('Position', SCADA.W.v3, 'val => SCADA.W.v3 = val'));
+        }
+        if (c === 'ADVANCED') {
+          h += bzl('EFFLUENT BOOSTER [P-105]', btn('P5', `SCADA.W.p5=true`, `SCADA.W.p5=false`, SCADA.W.p5));
+          h += bzl('CHLORINE FEED [V-104]', sld('Position', SCADA.W.v4, 'val => SCADA.W.v4 = val'));
+          h += bzl('SIS SAFETY INTERLOCK', btn('SIS', `SCADA.W.sis=100`, `SCADA.W.sis=0`, SCADA.W.sis>0));
+          h += bzl('BYPASS VALVE [V-105]', sld('Position', SCADA.W.v5, 'val => SCADA.W.v5 = val'));
+        }
+      } else if (sc === 'CHEM') {
+        h += bzl('AGITATOR [AG-101]', btn('MIX', `SCADA.C.ag=true`, `SCADA.C.ag=false`, SCADA.C.ag));
+        h += bzl('HEATER JACKET', btn('HEAT', `SCADA.C.h=true`, `SCADA.C.h=false`, SCADA.C.h), 'amber');
+        h += bzl('HARVEST VALVE [V-DIS]', sld('Position', SCADA.C.vDis, 'val => SCADA.C.vDis = val'));
+        if (c !== 'SIMPLE') h += bzl('DOSING PUMP A', btn('PA', `SCADA.C.p1=true`, `SCADA.C.p1=false`, SCADA.C.p1));
+        if (c === 'ADVANCED') h += bzl('DOSING PUMP B', btn('PB', `SCADA.C.p2=true`, `SCADA.C.p2=false`, SCADA.C.p2));
+      } else if (sc === 'POWER') {
+        h += bzl('MAIN SF6 BREAKER', btn('CBM', `SCADA.P.cbM=true`, `SCADA.P.cbM=false`, SCADA.P.cbM));
+        if (c !== 'SIMPLE') h += bzl('FEEDER BREAKER 1', btn('CB1', `SCADA.P.cb1=true`, `SCADA.P.cb1=false`, SCADA.P.cb1));
+        if (c === 'ADVANCED') { h += bzl('FEEDER BREAKER 2', btn('CB2', `SCADA.P.cb2=true`, `SCADA.P.cb2=false`, SCADA.P.cb2)); h += bzl('BUS TIE BREAKER', btn('TIE', `SCADA.P.cbTie=true`, `SCADA.P.cbTie=false`, SCADA.P.cbTie)); }
+      } else if (sc === 'HVAC') {
+        h += bzl('SUPPLY FAN [AHU-1]', btn('AHU', `SCADA.H.ah1=true`, `SCADA.H.ah1=false`, SCADA.H.ah1));
+        h += bzl('MIXING DAMPER', sld('Position', SCADA.H.d1, 'val => SCADA.H.d1 = val'));
+        if (c !== 'SIMPLE') { h += bzl('CHILLER [CH-1]', btn('CH', `SCADA.H.ch1=true`, `SCADA.H.ch1=false`, SCADA.H.ch1)); h += bzl('CHW PUMP', btn('PCHW', `SCADA.H.p1=true`, `SCADA.H.p1=false`, SCADA.H.p1)); }
+        if (c === 'ADVANCED') h += bzl('COOLING TOWER FAN', btn('CT', `SCADA.H.ct1=true`, `SCADA.H.ct1=false`, SCADA.H.ct1));
+      } else if (sc === 'OIL') {
+        h += bzl('MAIN BOOSTER PUMP', btn('P1', `SCADA.O.p1=true`, `SCADA.O.p1=false`, SCADA.O.p1));
+        h += bzl('DISCHARGE VALVE', sld('Position', SCADA.O.v1, 'val => SCADA.O.v1 = val'));
+        if (c !== 'SIMPLE') h += bzl('BOOSTER PUMP 2', btn('P2', `SCADA.O.p2=true`, `SCADA.O.p2=false`, SCADA.O.p2));
+        if (c === 'ADVANCED') h += bzl('ESD ISOLATION VALVE', sld('Position', SCADA.O.esd, 'val => SCADA.O.esd = val'));
+      } else if (sc === 'FOOD') {
+        h += bzl('FILLER LINE', btn('FIL', `SCADA.F.fil=true`, `SCADA.F.fil=false`, SCADA.F.fil));
+        if (c !== 'SIMPLE') h += bzl('PASTEURIZER HX', btn('HX', `SCADA.F.hx=true`, `SCADA.F.hx=false`, SCADA.F.hx), 'amber');
+        if (c === 'ADVANCED') h += bzl('CIP SANITIZE PUMP', btn('CIP', `SCADA.F.pCIP=true`, `SCADA.F.pCIP=false`, SCADA.F.pCIP));
+      } else if (sc === 'CLEAN') {
+        h += bzl('HEPA BLOWER 1', btn('F1', `SCADA.CL.f1=true`, `SCADA.CL.f1=false`, SCADA.CL.f1));
+        if (c !== 'SIMPLE') h += bzl('HEPA BLOWER 2', btn('F2', `SCADA.CL.f2=true`, `SCADA.CL.f2=false`, SCADA.CL.f2));
+        if (c === 'ADVANCED') h += bzl('GAS SCRUBBER', btn('S1', `SCADA.CL.s1=true`, `SCADA.CL.s1=false`, SCADA.CL.s1));
+      } else if (sc === 'DATA') {
+        h += bzl('CRAC UNIT 1', btn('C1', `SCADA.D.crac1=true`, `SCADA.D.crac1=false`, SCADA.D.crac1));
+        if (c !== 'SIMPLE') h += bzl('CRAC UNIT 2', btn('C2', `SCADA.D.crac2=true`, `SCADA.D.crac2=false`, SCADA.D.crac2));
+        if (c === 'ADVANCED') h += bzl('UPS BATTERY BANK', btn('UPS', `SCADA.D.ups=true`, `SCADA.D.ups=false`, SCADA.D.ups));
+      }
+      pane.innerHTML = h;
+    }
+
+    function telemetryLoop() {
+      let v1=0, v2=0, v3=0, v4=0, l1='', l2='', l3='', l4='', max1=100, max2=100, max3=100, max4=100;
+      let att = SCADA.underAttack, sc = SCADA.scenario;
+
+      if (sc === 'WATER') { 
+        v1 = att ? 35 : SCADA.W.press; 
+        v2 = att ? 85 : SCADA.W.tk1; 
+        v3 = att ? 120 : SCADA.W.flow; 
+        v4 = att ? 0.2 : SCADA.W.turb; 
+        l1='PSI'; l2='INTAKE %'; l3='FLOW GPM'; l4='TURB NTU'; 
+        max1=200; max3=800; max4=5; 
+      }
+      else if (sc === 'CHEM') { v1 = att?24.5:SCADA.C.temp; v2 = att?1.0:SCADA.C.press; v3 = att?7.0:7.2; v4 = att?10:SCADA.C.rx; l1='TEMP C'; l2='BAR'; l3='pH'; l4='RX LVL %'; max1=150; max2=20; max3=14; }
+      else if (sc === 'POWER') { v1 = att?60:SCADA.P.freq; v2 = att?45:SCADA.P.load; v3 = att?13.8:SCADA.P.volt; v4 = SCADA.P.sf6; l1='Hz'; l2='MW'; l3='kV'; l4='SF6 BAR'; max1=70; max2=150; max3=20; max4=10; }
+      else if (sc === 'HVAC') { v1 = SCADA.H.sTemp; v2 = SCADA.H.flow; v3 = 0.5; v4 = SCADA.H.rh; l1='TEMP F'; l2='CFM'; l3='IN WC'; l4='RH %'; max1=120; max2=10000; max3=2; }
+      else if (sc === 'OIL') { v1 = att?200:SCADA.O.press; v2 = att?500:SCADA.O.flow; v3 = SCADA.O.tkS; v4 = SCADA.O.vib; l1='PSI'; l2='BBL/H'; l3='SURGE %'; l4='VIB G'; max1=800; max2=1000; max4=2; }
+      else if (sc === 'FOOD') { v1 = SCADA.F.temp; v2 = SCADA.F.tkProd; v3 = SCADA.F.bottleCount; v4 = SCADA.F.tkCIP; l1='TEMP C'; l2='PROD LVL'; l3='BOTTLES'; l4='CIP LVL'; max1=100; max3=5000; }
+      else if (sc === 'CLEAN') { v1 = SCADA.CL.diff; v2 = SCADA.CL.part; v3 = SCADA.CL.rh; v4 = SCADA.CL.temp; l1='DIFF PA'; l2='PRTCL/M3'; l3='RH %'; l4='TEMP F'; max1=100; max2=2000; max4=100; }
+      else if (sc === 'DATA') { v1 = SCADA.D.sTemp; v2 = SCADA.D.kw; v3 = SCADA.D.batSoC; v4 = 1.15; l1='TEMP F'; l2='kW LOAD'; l3='UPS SOC%'; l4='PUE'; max1=150; max2=2000; max4=3; }
+
+      const spoofWarn = document.getElementById('trend-spoof-warning');
+      if (spoofWarn) spoofWarn.style.display = att ? 'block' : 'none';
+
+      document.getElementById('g1-lbl').innerText = l1; drawGauge('g1-can', v1, 0, max1, '#38bdf8'); document.getElementById('g1-val').innerText = v1.toFixed(1);
+      document.getElementById('g2-lbl').innerText = l2; drawGauge('g2-can', v2, 0, max2, '#f59e0b'); document.getElementById('g2-val').innerText = v2.toFixed(1);
+      document.getElementById('g3-lbl').innerText = l3; drawGauge('g3-can', v3, 0, max3, '#10b981'); document.getElementById('g3-val').innerText = v3.toFixed(1);
+      document.getElementById('g4-lbl').innerText = l4; drawGauge('g4-can', v4, 0, max4, '#a855f7'); document.getElementById('g4-val').innerText = v4.toFixed(1);
+
+      document.getElementById('trend-l1').innerText = l1; document.getElementById('trend-l2').innerText = l2; document.getElementById('trend-l3').innerText = l3;
+      
+      if (!SCADA.trendPaused) {
+        SCADA.hist.p1.shift(); SCADA.hist.p1.push(v1/max1);
+        SCADA.hist.p2.shift(); SCADA.hist.p2.push(v2/max2);
+        SCADA.hist.p3.shift(); SCADA.hist.p3.push(v3/max3);
+        drawTrend();
+      }
+
+      updateTelemetryComparison();
+
+      document.getElementById('elec-volts').innerText = (480 + (Math.random()-0.5)*2).toFixed(1) + ' V';
+      document.getElementById('elec-amps').innerText = (12 + (Math.random()-0.5)).toFixed(1) + ' A';
+      document.getElementById('elec-freq').innerText = (60 + (Math.random()-0.5)*0.04).toFixed(2) + ' Hz';
+    }
+
+    function resetScenario() {
+      SCADA.underAttack = false;
+      SCADA.failure = false;
+      SCADA.estopActive = false;
+      SCADA.estopLatch = false;
+      
+      const guard = document.getElementById('estop-latch-cover');
+      if (guard) guard.classList.remove('open');
+      
+      SCADA.loto.clear();
+      SCADA.faults.clear();
+      SCADA.bypassed.clear();
+      
+      SCADA.W = { 
+        tk1: 85, tk2: 45, tk3: 80, tk4: 90, tk5: 60, tk6: 25, 
+        p1: false, p2: false, p3: false, p4: false, p5: false, 
+        v1: 100, v2: 50, v3: 10, v4: 80, v5: 0, sis: 100, 
+        press: 35, flow: 120, turb: 0.2, doLevel: 6.8, phVal: 7.2 
+      };
+      SCADA.C = { tkA: 90, tkB: 85, rx: 20, tkProd: 10, p1: false, p2: false, p3: false, h: false, ag: false, temp: 24, press: 1.0, vDis: 0 };
+      SCADA.P = { cbM: true, cb1: true, cb2: false, cbTie: false, load: 45, freq: 60.00, volt: 13.8, sf6: 6.2 };
+      SCADA.H = { ch1: false, ct1: false, ah1: false, p1: false, v1: 80, d1: 30, sTemp: 72, flow: 4500, rh: 48 };
+      SCADA.O = { p1: false, p2: false, p3: false, v1: 100, esd: 100, tkS: 15, press: 180, flow: 0, vib: 0.1 };
+      SCADA.F = { pCIP: false, hx: false, fil: false, tkCIP: 95, tkProd: 60, temp: 22, bottleCount: 0, flow: 0 };
+      SCADA.CL = { f1: false, f2: false, s1: false, diff: 0, part: 450, rh: 42, temp: 68.0 };
+      SCADA.D = { crac1: false, crac2: false, ups: true, gen: false, ats: 'UTIL', kw: 1150, sTemp: 72, batSoC: 99 };
+      
+      const ov = document.getElementById('attack-overlay');
+      if (ov) ov.classList.add('hidden');
+      
+      const banner = document.getElementById('failure-banner');
+      if (banner) banner.classList.add('hidden');
+      
+      const svgC = document.getElementById('svg-container');
+      if (svgC) svgC.classList.remove('catastrophic-failure');
+      
+      const sysStatus = document.getElementById('sys-status-text');
+      if (sysStatus) {
+        sysStatus.innerText = 'NORMAL';
+        sysStatus.className = 'text-cyan-400 font-bold tracking-wider';
+      }
+      
+      const spoofWarn = document.getElementById('trend-spoof-warning');
+      if (spoofWarn) spoofWarn.style.display = 'none';
+
+      SCADA.hist = { p1: Array(40).fill(0), p2: Array(40).fill(0), p3: Array(40).fill(0), p4: Array(40).fill(0) };
+
+      renderControls();
+      renderSVG();
+      updateTelemetryComparison();
+      toast('🔄 Scenario Reset: Baseline Parameters & Hardware Restored');
+      log('SYS', `Scenario ${SCADA.scenario} reset to nominal operational state`, 'INFO');
+    }
+
+    function toggleAttack() {
+      SCADA.underAttack = !SCADA.underAttack;
+
+      if (SCADA.underAttack) {
+        preAttackSnapshot = JSON.parse(JSON.stringify({
+          failure: SCADA.failure,
+          mode: SCADA.mode,
+          W: SCADA.W,
+          C: SCADA.C,
+          P: SCADA.P,
+          H: SCADA.H,
+          O: SCADA.O,
+          F: SCADA.F,
+          CL: SCADA.CL,
+          D: SCADA.D
+        }));
+      }
+      
+      const ov = document.getElementById('attack-overlay');
+      if (ov) {
+        if (SCADA.underAttack) ov.classList.remove('hidden');
+        else ov.classList.add('hidden');
+      }
+
+      const spoofWarn = document.getElementById('trend-spoof-warning');
+      if (spoofWarn) spoofWarn.style.display = SCADA.underAttack ? 'block' : 'none';
+
+      const stuxBtn = document.getElementById('btn-stuxnet-toggle');
+      if (stuxBtn) {
+        stuxBtn.innerText = SCADA.underAttack ? '✅ DISARM MALWARE' : '⚠️ SIMULATE STUXNET ATTACK';
+        stuxBtn.className = `px-3 py-1.5 ${SCADA.underAttack ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border-emerald-500' : 'bg-red-900/80 hover:bg-red-800 text-red-200 border-red-600'} rounded font-bold text-[10px] border transition-colors shadow`;
+      }
+
+      const drillBadge = document.getElementById('drill-status-badge');
+      if (drillBadge) {
+        drillBadge.innerText = SCADA.underAttack ? 'MALWARE ACTIVE' : 'SYSTEM SECURE';
+        drillBadge.className = `text-[9px] px-2 py-0.5 rounded ${SCADA.underAttack ? 'bg-red-950 border border-red-500 text-red-300 animate-pulse' : 'bg-slate-800 text-slate-400'}`;
+      }
+
+      const compBadge = document.getElementById('comp-attack-badge');
+      if (compBadge) {
+        compBadge.innerText = SCADA.underAttack ? '🚨 TELEMETRY HIJACKED' : '✅ FEED SYNCHRONIZED';
+        compBadge.className = `px-2 py-0.5 rounded text-[10px] font-mono font-bold ${SCADA.underAttack ? 'bg-red-950 text-red-400 border border-red-600 animate-pulse' : 'bg-emerald-950 text-emerald-400 border border-emerald-600'}`;
+      }
+
+      if (!SCADA.underAttack) {
+        if (preAttackSnapshot) {
+          SCADA.failure = preAttackSnapshot.failure;
+          SCADA.mode = preAttackSnapshot.mode;
+          SCADA.W = preAttackSnapshot.W;
+          SCADA.C = preAttackSnapshot.C;
+          SCADA.P = preAttackSnapshot.P;
+          SCADA.H = preAttackSnapshot.H;
+          SCADA.O = preAttackSnapshot.O;
+          SCADA.F = preAttackSnapshot.F;
+          SCADA.CL = preAttackSnapshot.CL;
+          SCADA.D = preAttackSnapshot.D;
+          preAttackSnapshot = null;
+        }
+
+        document.getElementById('svg-container')?.classList.remove('catastrophic-failure');
+        const banner = document.getElementById('failure-banner');
+        if (banner) banner.classList.add('hidden');
+
+        const sysStatus = document.getElementById('sys-status-text');
+        if (sysStatus) {
+          sysStatus.innerText = 'NORMAL';
+          sysStatus.className = 'text-cyan-400 font-bold tracking-wider';
+        }
+
+        log('CYBER', 'Malware disarmed by operator. Pre-attack state successfully restored.', 'INFO');
+        toast('✅ Malware Disarmed: Pre-Attack State Restored');
+      } else {
+        log('CYBER', 'MALWARE INJECTION DETECTED: TELEMETRY SPOOFED & INTERLOCKS BYPASSED', 'CRIT');
+        toast('⚠️ MALWARE INJECTED: Telemetry Spoofed');
+      }
+
+      renderSVG();
+      renderControls();
+      updateTelemetryComparison();
+    }
+
+    function openSecurityMenu() {
+      const content = document.getElementById('modal-content');
+      if(!content) return;
+      content.innerHTML = `
+        <div class="p-3 bg-slate-950 rounded border border-purple-900/60 space-y-2">
+          <div class="text-purple-400 font-bold flex justify-between items-center">
+            <span>🎯 OPERATOR VULNERABILITIES & CYBER DRILL</span>
+            <span id="drill-status-badge" class="text-[9px] px-2 py-0.5 rounded ${SCADA.underAttack ? 'bg-red-950 border border-red-500 text-red-300 animate-pulse' : 'bg-slate-800 text-slate-400'}">${SCADA.underAttack ? 'MALWARE ACTIVE' : 'SYSTEM SECURE'}</span>
+          </div>
+          <p class="text-slate-400 text-[11px]">Simulates Purdue Model Level 1/2 malware injection (Stuxnet variant) bypassing HMI interlocks, spoofing telemetry feeds, and forcing physical overpressure.</p>
+          <div class="flex gap-2 pt-2 flex-wrap">
+            <button id="btn-stuxnet-toggle" onclick="toggleAttack()" class="px-3 py-1.5 ${SCADA.underAttack ? 'bg-emerald-800 hover:bg-emerald-700 text-emerald-100 border-emerald-500' : 'bg-red-900/80 hover:bg-red-800 text-red-200 border-red-600'} rounded font-bold text-[10px] border transition-colors shadow">
+              ${SCADA.underAttack ? '✅ DISARM MALWARE' : '⚠️ SIMULATE STUXNET ATTACK'}
+            </button>
+            <button onclick="openTelemetryComparisonModal()" class="px-3 py-1.5 bg-amber-900/80 hover:bg-amber-800 text-amber-200 rounded font-bold text-[10px] border border-amber-600 transition-colors shadow">
+              👁️ OPEN ACTUAL VS HMI COMPARISON
+            </button>
+          </div>
+        </div>
+        <div class="p-3 bg-slate-950 rounded border border-slate-800 space-y-1 text-[11px]">
+          <div class="text-cyan-400 font-bold">COMMON OPERATOR/ADMIN MISTAKES:</div>
+          <div>• Flat L2/L3 Network Architecture (No OT Microsegmentation)</div>
+          <div>• Hardcoded Modbus/DNP3 Default Credentials & Unencrypted Telemetry</div>
+          <div>• Bypassing Hardware Safety Interlocks during maintenance without LOTO</div>
+          <div>• Alarm Fatigue: Ignoring persistent high-limit pre-alerts</div>
+        </div>
+      `;
+      document.getElementById('modal-bg').classList.remove('hidden');
+    }
+
+    function updateTelemetryComparison() {
+      const container = document.getElementById('telemetry-comparison-table');
+      if (!container) return;
+
+      const sc = SCADA.scenario;
+      const att = SCADA.underAttack;
+
+      let metrics = [];
+
+      if (sc === 'WATER') {
+        metrics = [
+          { name: 'Effluent Line Pressure', hmi: att ? '35.0 PSI' : SCADA.W.press.toFixed(1) + ' PSI', actual: SCADA.W.press.toFixed(1) + ' PSI' },
+          { name: 'Raw Sewage Intake Tank (TK-101)', hmi: att ? '85.0 %' : SCADA.W.tk1.toFixed(1) + ' %', actual: SCADA.W.tk1.toFixed(1) + ' %' },
+          { name: 'Dissolved Oxygen Level (DO)', hmi: att ? '6.8 mg/L' : SCADA.W.doLevel.toFixed(1) + ' mg/L', actual: SCADA.W.doLevel.toFixed(1) + ' mg/L' },
+          { name: 'Plant Water Turbidity', hmi: att ? '0.20 NTU' : SCADA.W.turb.toFixed(2) + ' NTU', actual: SCADA.W.turb.toFixed(2) + ' NTU' },
+          { name: 'Main Intake Flow Rate', hmi: att ? '120.0 GPM' : SCADA.W.flow.toFixed(0) + ' GPM', actual: SCADA.W.flow.toFixed(0) + ' GPM' }
+        ];
+      } else if (sc === 'CHEM') {
+        metrics = [
+          { name: 'Reactor Temperature', hmi: att ? '24.5 °C' : SCADA.C.temp.toFixed(1) + ' °C', actual: SCADA.C.temp.toFixed(1) + ' °C' },
+          { name: 'Reactor Pressure', hmi: att ? '1.0 Bar' : SCADA.C.press.toFixed(1) + ' Bar', actual: SCADA.C.press.toFixed(1) + ' Bar' },
+          { name: 'Reactor Level (RX-201)', hmi: att ? '10.0 %' : SCADA.C.rx.toFixed(1) + ' %', actual: SCADA.C.rx.toFixed(1) + ' %' }
+        ];
+      } else if (sc === 'POWER') {
+        metrics = [
+          { name: 'Grid Frequency', hmi: att ? '60.00 Hz' : SCADA.P.freq.toFixed(2) + ' Hz', actual: SCADA.P.freq.toFixed(2) + ' Hz' },
+          { name: 'Total Load', hmi: att ? '45.0 MW' : SCADA.P.load.toFixed(1) + ' MW', actual: SCADA.P.load.toFixed(1) + ' MW' },
+          { name: 'Bus Voltage', hmi: att ? '13.8 kV' : SCADA.P.volt.toFixed(1) + ' kV', actual: SCADA.P.volt.toFixed(1) + ' kV' }
+        ];
+      } else if (sc === 'OIL') {
+        metrics = [
+          { name: 'Pipeline Hydraulic Pressure', hmi: att ? '200 PSI' : SCADA.O.press.toFixed(0) + ' PSI', actual: SCADA.O.press.toFixed(0) + ' PSI' },
+          { name: 'Main Throughput Flow', hmi: att ? '500 BBL/H' : SCADA.O.flow.toFixed(0) + ' BBL/H', actual: SCADA.O.flow.toFixed(0) + ' BBL/H' },
+          { name: 'Booster Bearing Vibration', hmi: att ? '0.10 G' : SCADA.O.vib.toFixed(2) + ' G', actual: SCADA.O.vib.toFixed(2) + ' G' }
+        ];
+      } else {
+        metrics = [
+          { name: 'Primary Metric 1', hmi: att ? '35.0 Nom' : '35.0 Nom', actual: '35.0 Nom' },
+          { name: 'Primary Metric 2', hmi: att ? '100.0 Nom' : '100.0 Nom', actual: '100.0 Nom' }
+        ];
+      }
+
+      let html = '';
+      metrics.forEach(m => {
+        const isMismatch = att && m.hmi !== m.actual;
+        html += `
+          <div class="p-2 rounded bg-slate-950 border ${isMismatch ? 'border-red-600/80 bg-red-950/20' : 'border-slate-800'} transition-all">
+            <div class="flex justify-between items-center mb-1">
+              <span class="font-bold text-slate-200">${m.name}</span>
+              <span class="px-1.5 py-0.5 rounded text-[8px] font-bold ${isMismatch ? 'bg-red-900/80 text-red-200 border border-red-500 animate-pulse' : 'bg-emerald-900/60 text-emerald-300 border border-emerald-600'}">
+                ${isMismatch ? '⚠️ FALSE TELEMETRY SPOOFED' : 'VALID / SYNCHRONIZED'}
+              </span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-[11px] font-digital">
+              <div class="p-1.5 rounded bg-slate-900 text-center border border-slate-800">
+                <span class="text-[8px] text-slate-500 block font-mono">HMI DISPLAY</span>
+                <span class="${isMismatch ? 'text-emerald-400' : 'text-cyan-400'} font-bold">${m.hmi}</span>
+              </div>
+              <div class="p-1.5 rounded bg-slate-900 text-center border ${isMismatch ? 'border-red-500 bg-red-950/40' : 'border-slate-800'}">
+                <span class="text-[8px] text-slate-500 block font-mono">PHYSICAL PLC FIELD SENSOR</span>
+                <span class="${isMismatch ? 'text-red-400 font-black animate-pulse' : 'text-emerald-400'}">${m.actual}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function openDiag(id) {
+      closeDiagModal();
+      document.getElementById('diag-modal-title').innerText = `🩺 FFT VIBRATION SPECTRUM & HEALTH [${id}]`;
+      fftFaultMode = SCADA.faults.has(id) ? 'BEARING_WEAR' : 'NOMINAL';
+      fftCalibratedOffset = 0;
+
+      document.getElementById('diag-modal-content').innerHTML = `
+        <div class="space-y-3 font-mono">
+          <div class="panel-inset p-2 rounded">
+            <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+              <span>LIVE FFT FREQUENCY SPECTRUM (0 - 1000 Hz)</span>
+              <span id="fft-health-badge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-600">ISO CLASS A: GOOD</span>
+            </div>
+            <canvas id="fft-canvas" width="440" height="130" class="w-full h-32 block bg-slate-950 rounded border border-slate-800"></canvas>
+            <div class="flex justify-between text-[8px] text-slate-500 mt-1">
+              <span>0 Hz</span><span>250 Hz (1X RPM)</span><span>500 Hz (2X)</span><span>750 Hz (3X)</span><span>1000 Hz</span>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-2.5 rounded border border-slate-800 grid grid-cols-2 gap-2 text-[10px]">
+            <div><span class="text-slate-400 block">ASSET ID:</span><span class="text-cyan-400 font-bold">${id}</span></div>
+            <div><span class="text-slate-400 block">VIBRATION RMS:</span><span id="fft-vib-val" class="text-emerald-400 font-bold">0.12 mm/s</span></div>
+            <div><span class="text-slate-400 block">BEARING TEMP:</span><span id="fft-temp-val" class="text-emerald-400 font-bold">41.2 °C</span></div>
+            <div><span class="text-slate-400 block">EST. REMAINING LIFE:</span><span id="fft-rul-val" class="text-cyan-400 font-bold">14,200 HRS</span></div>
+          </div>
+
+          <div class="p-2 bg-slate-950 rounded border border-slate-800 text-[10px] space-y-1">
+            <span class="text-amber-400 font-bold block">INJECT DIAGNOSTIC FAULT CONDITION:</span>
+            <div class="flex gap-1.5">
+              <button id="btn-fft-nom" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700">NOMINAL</button>
+              <button id="btn-fft-unbal" class="flex-1 py-1 rounded bg-amber-900/80 hover:bg-amber-800 text-amber-200 font-bold border border-amber-600">UNBALANCE</button>
+              <button id="btn-fft-wear" class="flex-1 py-1 rounded bg-red-900/80 hover:bg-red-800 text-red-200 font-bold border border-red-600">BEARING WEAR</button>
+            </div>
+          </div>
+
+          <div class="flex gap-2">
+            <button id="btn-zero-sensor" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[10px] font-bold rounded border border-cyan-600/80 shadow">
+              🎯 ZERO & RECALIBRATE SENSOR
+            </button>
+            <button onclick="closeDiagModal()" class="flex-1 py-1.5 bg-cyan-700 hover:bg-cyan-600 text-white text-[10px] font-bold rounded">
+              CLOSE DIAGNOSTICS
+            </button>
+          </div>
+        </div>`;
+
+      document.getElementById('diag-modal-bg').classList.remove('hidden');
+
+      document.getElementById('btn-fft-nom').onclick = () => { fftFaultMode = 'NOMINAL'; fftCalibratedOffset = 0; toast('Vibration baseline set to Nominal.'); };
+      document.getElementById('btn-fft-unbal').onclick = () => { fftFaultMode = 'UNBALANCE'; toast('Simulating Mechanical Unbalance Fault (High 1X Peak)'); };
+      document.getElementById('btn-fft-wear').onclick = () => { fftFaultMode = 'BEARING_WEAR'; toast('Simulating Inner-Race Bearing Flaw (High-Frequency Noise)'); };
+      
+      document.getElementById('btn-zero-sensor').onclick = () => { 
+        fftFaultMode = 'NOMINAL';
+        fftCalibratedOffset = 0.07;
+        
+        const badge = document.getElementById('fft-health-badge');
+        if (badge) {
+          badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-600';
+          badge.innerText = 'ISO CLASS A: RECALIBRATED';
+        }
+        
+        document.getElementById('fft-vib-val').innerText = '0.05 mm/s';
+        document.getElementById('fft-temp-val').innerText = '38.0 °C';
+        document.getElementById('fft-rul-val').innerText = '16,500 HRS';
+
+        toast(`🎯 Sensor baseline zeroed and recalibrated for ${id}`); 
+        log('CAL', `Zeroed vibration sensor baseline offset on asset ${id}`, 'INFO'); 
+      };
+
+      function animateFFT() {
+        const canvas = document.getElementById('fft-canvas');
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          const w = canvas.width, h = canvas.height;
+          ctx.clearRect(0, 0, w, h);
+
+          ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 0.5;
+          for (let y=0; y<h; y+=25) { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
+          for (let x=0; x<w; x+=55) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke(); }
+
+          let vibRms = 0.12 - fftCalibratedOffset, temp = 41.2, rul = '14,200 HRS';
+          let badge = document.getElementById('fft-health-badge');
+
+          if (fftFaultMode === 'UNBALANCE') {
+            vibRms = 4.85; temp = 58.4; rul = '1,100 HRS';
+            if (badge) { badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-950 text-amber-400 border border-amber-600'; badge.innerText = 'ISO CLASS C: ALARM'; }
+          } else if (fftFaultMode === 'BEARING_WEAR') {
+            vibRms = 9.20; temp = 78.1; rul = '120 HRS';
+            if (badge) { badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-950 text-red-400 border border-red-600 animate-pulse'; badge.innerText = 'ISO CLASS D: DANGER'; }
+          } else {
+            if (badge && !badge.innerText.includes('RECALIBRATED')) { 
+              badge.className = 'px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-600'; 
+              badge.innerText = 'ISO CLASS A: GOOD'; 
+            }
+          }
+
+          document.getElementById('fft-vib-val').innerText = Math.max(0.02, vibRms).toFixed(2) + ' mm/s';
+          document.getElementById('fft-temp-val').innerText = temp.toFixed(1) + ' °C';
+          document.getElementById('fft-rul-val').innerText = rul;
+
+          ctx.beginPath();
+          ctx.strokeStyle = fftFaultMode==='BEARING_WEAR'?'#ef4444':(fftFaultMode==='UNBALANCE'?'#f59e0b':'#10b981');
+          ctx.lineWidth = 1.5;
+
+          const numBins = 100;
+          for (let i=0; i<numBins; i++) {
+            let freqRatio = i / numBins;
+            let amp = 5 + (Math.random() * 4);
+
+            if (Math.abs(freqRatio - 0.25) < 0.03) {
+              amp += fftFaultMode === 'UNBALANCE' ? 85 : 35;
+            }
+            if (Math.abs(freqRatio - 0.50) < 0.03) {
+              amp += fftFaultMode === 'UNBALANCE' ? 45 : 18;
+            }
+            if (fftFaultMode === 'BEARING_WEAR' && freqRatio > 0.6) {
+              amp += Math.random() * 55 + 20;
+            }
+
+            let x = (i / numBins) * w;
+            let y = h - (amp / 100) * h;
+            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+
+        fftAnimId = requestAnimationFrame(animateFFT);
+      }
+      animateFFT();
+    }
+  </script>
+<script>
+/*
+  FACILITY ALPHA — NON-WATER SCENARIO ENHANCEMENT V2
+  Replace prior enhancement patches with this one.
+*/
+(() => {
+  "use strict";
+
+  const baseRenderControls = window.renderControls;
+  const baseRenderSVG = window.renderSVG;
+  const basePhysicsLoop = window.physicsLoop;
+  const baseResetScenario = window.resetScenario;
+  const baseTelemetryLoop = window.telemetryLoop;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const num = (value, digits = 1) => Number(value).toFixed(digits);
+
+  function addDefaults(target, defaults) {
+    Object.entries(defaults).forEach(([key, value]) => {
+      if (typeof target[key] === "undefined") target[key] = value;
+    });
+  }
+
+  function ensureEnhancedState() {
+    addDefaults(SCADA.C, {
+      jacketSet: 62,
+      coolingValve: 48,
+      agitatorSpeed: 78,
+      conversion: 0,
+      reactionRate: 0
+    });
+
+    addDefaults(SCADA.P, {
+      demandMW: 45,
+      tapPosition: 0,
+      powerFactor: 0.92,
+      lineResistance: 0.18,
+      currentA: 0,
+      lossMW: 0,
+      sourceKV: 13.8
+    });
+
+    addDefaults(SCADA.H, {
+      setpointF: 72,
+      outsideF: 92,
+      occupancy: 85,
+      coilCommand: 55,
+      zoneLoadKW: 0
+    });
+
+    addDefaults(SCADA.O, {
+      inletPSI: 340,
+      deliveryPSI: 155,
+      leakOpen: false,
+      leakRate: 0,
+      linePack: 50
+    });
+
+    addDefaults(SCADA.F, {
+      targetTemp: 72,
+      heaterDuty: 62,
+      productRate: 1800,
+      holdSeconds: 0,
+      lethalityIndex: 0,
+      qualityIndex: 100
+    });
+
+    addDefaults(SCADA.CL, {
+      personnel: 8,
+      ffuSpeed: 82,
+      exhaustFlow: 72,
+      roomVolume: 900,
+      contaminationExcursion: false
+    });
+
+    addDefaults(SCADA.D, {
+      itLoadKW: 1150,
+      supplySetpoint: 72,
+      returnTemp: 82,
+      coolingCommand: 58,
+      utilityAvailable: true
+    });
+  }
+
+  /*
+    SVG library. All process lines intentionally terminate at the outer
+    edge of the associated equipment graphic.
+  */
+  const G = {
+    defs: `
+      <defs>
+        <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#38bdf8"></path>
+        </marker>
+        <marker id="arrow-amber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#f59e0b"></path>
+        </marker>
+        <marker id="arrow-green" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#10b981"></path>
+        </marker>
+        <marker id="arrow-yellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill="#eab308"></path>
+        </marker>
+      </defs>`,
+
+    line(d, active, color = "#38bdf8", type = "FLUID") {
+      const arrow =
+        type === "ELEC" ? "arrow-yellow" :
+        color === "#f59e0b" ? "arrow-amber" :
+        color === "#10b981" ? "arrow-green" :
+        "arrow-cyan";
+
+      const cls =
+        type === "ELEC"
+          ? "pipe-elec"
+          : color === "#f59e0b"
+            ? "pipe-steam"
+            : active
+              ? "pipe-flowing"
+              : "";
+
+      return `
+        <path d="${d}" fill="none" stroke="#0f172a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path
+          d="${d}"
+          fill="none"
+          stroke="${color}"
+          stroke-width="5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="${active ? cls : ""}"
+          opacity="${active ? "1" : "0.28"}"
+          marker-end="${active ? `url(#${arrow})` : ""}"
+        ></path>`;
+    },
+
+    tank(x, y, w, h, id, level, color = "#0284c7", subtitle = "VESSEL") {
+      const pct = clamp(level, 0, 100);
+      const liquidH = ((h - 10) * pct) / 100;
+      const liquidY = h - 5 - liquidH;
+
+      return `
+        <g transform="translate(${x},${y})" class="interactive-equip" data-equip="${id}" data-type="${subtitle}">
+          <rect width="${w}" height="${h}" rx="8" fill="#0f172a" stroke="#64748b" stroke-width="2"></rect>
+          <rect x="4" y="${liquidY}" width="${w - 8}" height="${liquidH}" rx="4" fill="${color}" opacity=".82"></rect>
+          <line x1="0" y1="16" x2="${w}" y2="16" stroke="#475569"></line>
+          <text x="${w / 2}" y="${h / 2}" fill="#f8fafc" font-size="13" font-family="Share Tech Mono" font-weight="bold" text-anchor="middle">${pct.toFixed(0)}%</text>
+          <text x="${w / 2}" y="${h + 16}" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
+        </g>`;
+    },
+
+    pump(x, y, id, running, fault = false) {
+      const color = fault ? "#ef4444" : running ? "#10b981" : "#64748b";
+      return `
+        <g transform="translate(${x},${y})" class="interactive-equip" data-equip="${id}" data-type="PUMP">
+          <circle r="20" fill="#0f172a" stroke="${color}" stroke-width="3"></circle>
+          <g class="${running && !fault ? "spin-center" : ""}">
+            <path d="M0 0 C8 -11 16 -3 8 4 C3 8 -2 7 0 0
+                     M0 0 C-11 8 -3 16 4 8 C8 3 7 -2 0 0
+                     M0 0 C-8 -11 -16 -3 -8 4 C-3 8 2 7 0 0"
+                  fill="none" stroke="${color}" stroke-width="2.2"></path>
+          </g>
+          <text x="0" y="34" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
+        </g>`;
+    },
+
+    valve(x, y, id, position) {
+      const open = Number(position) > 0;
+      const color = open ? "#10b981" : "#ef4444";
+      return `
+        <g transform="translate(${x},${y})" class="interactive-equip" data-equip="${id}" data-type="CONTROL VALVE">
+          <polygon points="-12,-10 12,10 12,-10 -12,10" fill="${color}" stroke="#020617" stroke-width="2"></polygon>
+          <text x="0" y="27" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
+          <text x="0" y="39" fill="${color}" font-size="8" font-family="Share Tech Mono" text-anchor="middle">${Math.round(position)}%</text>
+        </g>`;
+    },
+
+    breaker(x, y, id, closed) {
+      const color = closed ? "#10b981" : "#ef4444";
+      return `
+        <g transform="translate(${x},${y})" class="interactive-equip" data-equip="${id}" data-type="BREAKER">
+          <rect x="-18" y="-18" width="36" height="36" rx="5" fill="#0f172a" stroke="${color}" stroke-width="3"></rect>
+          <line x1="-10" y1="${closed ? "0" : "9"}" x2="10" y2="${closed ? "0" : "-9"}" stroke="${color}" stroke-width="4"></line>
+          <text x="0" y="32" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
+        </g>`;
+    },
+
+    fan(x, y, id, running) {
+      const color = running ? "#10b981" : "#64748b";
+      return `
+        <g transform="translate(${x},${y})" class="interactive-equip" data-equip="${id}" data-type="FAN">
+          <circle r="20" fill="#0f172a" stroke="${color}" stroke-width="2.5"></circle>
+          <g class="${running ? "spin-center" : ""}">
+            <path d="M0 0 C7 -15 15 -4 5 2
+                     M0 0 C15 7 4 15 -2 5
+                     M0 0 C-7 15 -15 4 -5 -2
+                     M0 0 C-15 -7 -4 -15 2 -5"
+                  fill="${color}" stroke="${color}"></path>
+          </g>
+          <text x="0" y="34" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
+        </g>`;
+    },
+
+    meter(x, y, id, value, unit, color = "#38bdf8") {
+      return `
+        <g transform="translate(${x},${y})" class="interactive-equip" data-equip="${id}" data-type="TRANSMITTER">
+          <circle r="17" fill="#020617" stroke="${color}" stroke-width="2"></circle>
+          <text x="0" y="-23" fill="${color}" font-size="9" font-family="Orbitron" text-anchor="middle">${id}</text>
+          <text x="0" y="3" fill="#f8fafc" font-size="9" font-family="Share Tech Mono" font-weight="bold" text-anchor="middle">${value}</text>
+          <text x="0" y="13" fill="#94a3b8" font-size="7" font-family="Share Tech Mono" text-anchor="middle">${unit}</text>
+        </g>`;
+    },
+
+    label(x, y, text, color = "#94a3b8", size = 10) {
+      return `<text x="${x}" y="${y}" fill="${color}" font-size="${size}" font-family="Orbitron" text-anchor="middle">${text}</text>`;
+    }
+  };
+
+  function processHeader(title, subtitle) {
+    return `
+      ${G.defs}
+      <text x="400" y="30" fill="#e2e8f0" font-size="15" font-family="Orbitron" font-weight="bold" text-anchor="middle">${title}</text>
+      <text x="400" y="47" fill="#64748b" font-size="9" font-family="Share Tech Mono" text-anchor="middle">${subtitle}</text>`;
+  }
+
+  function drawChemical() {
+    const c = SCADA.C;
+    const activeA = c.p1 && !SCADA.faults.has("P-A");
+    const activeB = c.p2 && !SCADA.faults.has("P-B");
+    const activeDischarge = c.vDis > 0;
+
+    return `
+      ${processHeader("CHEMICAL BATCH SYNTHESIS", "REACTANT FEED → JACKETED REACTOR → PRODUCT HOLD")}
+      ${G.line("M140 176 H170", activeA, "#10b981")}
+      ${G.line("M210 176 H310", activeA, "#10b981")}
+      ${G.line("M660 176 H630", activeB, "#a855f7")}
+      ${G.line("M590 176 H490", activeB, "#a855f7")}
+      ${G.line("M490 245 H545", activeDischarge, "#f59e0b")}
+      ${G.line("M585 245 H660", activeDischarge, "#f59e0b")}
+
+      ${G.tank(50, 120, 90, 112, "TK-A", c.tkA, "#10b981", "REACTANT TANK")}
+      ${G.pump(190, 176, "P-A", activeA, SCADA.faults.has("P-A"))}
+
+      ${G.tank(660, 120, 90, 112, "TK-B", c.tkB, "#8b5cf6", "REACTANT TANK")}
+      ${G.pump(610, 176, "P-B", activeB, SCADA.faults.has("P-B"))}
+
+      <g transform="translate(310,92)" class="interactive-equip" data-equip="RX-201" data-type="JACKETED REACTOR">
+        <rect width="180" height="180" rx="50" fill="#0f172a" stroke="${c.temp > 82 ? "#ef4444" : "#f59e0b"}" stroke-width="3"></rect>
+        <rect x="10" y="${258 - 92 - ((c.rx / 100) * 150)}" width="160" height="${(c.rx / 100) * 150}" rx="35" fill="#d97706" opacity=".72"></rect>
+        <rect x="-8" y="-8" width="196" height="196" rx="55" fill="none" stroke="${c.h ? "#ef4444" : "#475569"}" stroke-width="4" stroke-dasharray="7,5"></rect>
+        <g transform="translate(90,92)" class="${c.ag ? "spin-center" : ""}">
+          <line x1="-32" y1="0" x2="32" y2="0" stroke="#e2e8f0" stroke-width="4"></line>
+          <line x1="0" y1="-32" x2="0" y2="32" stroke="#e2e8f0" stroke-width="4"></line>
+        </g>
+        <text x="90" y="50" fill="#e2e8f0" font-size="13" font-family="Orbitron" text-anchor="middle">RX-201</text>
+        <text x="90" y="70" fill="#f59e0b" font-size="12" font-family="Share Tech Mono" text-anchor="middle">${num(c.temp)} °C</text>
+        <text x="90" y="88" fill="#38bdf8" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${num(c.press)} BAR</text>
+        <text x="90" y="160" fill="#e2e8f0" font-size="11" font-family="Share Tech Mono" text-anchor="middle">${num(c.conversion)}% CONV.</text>
+      </g>
+
+      ${G.valve(565, 245, "V-DIS", c.vDis)}
+      ${G.tank(660, 190, 95, 108, "TK-PROD", c.tkProd, "#f59e0b", "PRODUCT HOLD")}
+
+      ${G.meter(400, 72, "TT-201", num(c.temp), "°C", "#f59e0b")}
+      ${G.meter(505, 112, "PT-201", num(c.press), "BAR", c.press > 10 ? "#ef4444" : "#38bdf8")}
+      ${G.meter(274, 240, "AI-201", num(c.agitatorSpeed, 0), "% RPM", "#10b981")}
+    `;
+  }
+
+  function drawPower() {
+    const p = SCADA.P;
+    const main = p.cbM;
+    const f1 = main && p.cb1;
+    const f2 = main && p.cb2;
+    const tie = main && p.cbTie;
+
+    return `
+      ${processHeader("HIGH-VOLTAGE POWER SUBSTATION", "SOURCE → MAIN BREAKER → TRANSFORMER → 13.8 kV BUS → FEEDERS")}
+      ${G.line("M80 190 H132", main, "#eab308", "ELEC")}
+      ${G.line("M168 190 H265", main, "#eab308", "ELEC")}
+      ${G.line("M335 190 H420", main, "#eab308", "ELEC")}
+      ${G.line("M420 190 H710", main, "#eab308", "ELEC")}
+      ${G.line("M500 190 V285", f1, "#eab308", "ELEC")}
+      ${G.line("M620 190 V285", f2, "#eab308", "ELEC")}
+      ${G.line("M710 190 V285", tie, "#eab308", "ELEC")}
+
+      <g transform="translate(35,145)" class="interactive-equip" data-equip="GRID-115KV" data-type="UTILITY SOURCE">
+        <rect width="45" height="90" rx="5" fill="#0f172a" stroke="#eab308" stroke-width="3"></rect>
+        <text x="22" y="35" fill="#eab308" font-size="10" font-family="Orbitron" text-anchor="middle">GRID</text>
+        <text x="22" y="53" fill="#f8fafc" font-size="9" font-family="Share Tech Mono" text-anchor="middle">115 kV</text>
+      </g>
+
+      ${G.breaker(150, 190, "CB-MAIN", main)}
+
+      <g transform="translate(265,150)" class="interactive-equip" data-equip="TX-101" data-type="POWER TRANSFORMER">
+        <circle cx="28" cy="40" r="28" fill="none" stroke="#eab308" stroke-width="4"></circle>
+        <circle cx="72" cy="40" r="28" fill="none" stroke="#eab308" stroke-width="4"></circle>
+        <text x="50" y="88" fill="#94a3b8" font-size="10" font-family="Orbitron" text-anchor="middle">TX-101</text>
+      </g>
+
+      <g transform="translate(420,178)">
+        <rect width="290" height="24" rx="4" fill="#1e293b" stroke="#eab308" stroke-width="2"></rect>
+        <text x="145" y="17" fill="#fef08a" font-size="10" font-family="Orbitron" text-anchor="middle">13.8 kV BUS</text>
+      </g>
+
+      ${G.breaker(500, 285, "CB-F1", p.cb1)}
+      ${G.breaker(620, 285, "CB-F2", p.cb2)}
+      ${G.breaker(710, 285, "CB-TIE", p.cbTie)}
+
+      <g transform="translate(455,305)" class="interactive-equip" data-equip="LOAD-F1" data-type="FEEDER LOAD">
+        <rect width="90" height="55" rx="5" fill="#0f172a" stroke="${f1 ? "#10b981" : "#64748b"}" stroke-width="2"></rect>
+        <text x="45" y="24" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">FEEDER 1</text>
+        <text x="45" y="41" fill="#10b981" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${f1 ? "ONLINE" : "OPEN"}</text>
+      </g>
+
+      <g transform="translate(575,305)" class="interactive-equip" data-equip="LOAD-F2" data-type="FEEDER LOAD">
+        <rect width="90" height="55" rx="5" fill="#0f172a" stroke="${f2 ? "#10b981" : "#64748b"}" stroke-width="2"></rect>
+        <text x="45" y="24" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">FEEDER 2</text>
+        <text x="45" y="41" fill="#10b981" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${f2 ? "ONLINE" : "OPEN"}</text>
+      </g>
+
+      ${G.meter(395, 112, "VT-301", num(p.volt, 2), "kV", "#eab308")}
+      ${G.meter(530, 116, "CT-301", Math.round(p.currentA), "A", p.currentA > 5000 ? "#ef4444" : "#38bdf8")}
+      ${G.meter(650, 115, "FR-301", num(p.freq, 2), "Hz", p.freq < 59.5 ? "#ef4444" : "#10b981")}
+    `;
+  }
+
+  function drawHVAC() {
+    const h = SCADA.H;
+    const supply = h.ah1 && !SCADA.faults.has("AHU-1");
+    const cooling = h.ch1 && h.p1;
+
+    return `
+      ${processHeader("HVAC & BUILDING AUTOMATION", "OUTSIDE AIR → AHU / COIL → SUPPLY DUCT → CONDITIONED ZONE → RETURN")}
+      ${G.line("M90 200 H165", supply, "#38bdf8")}
+      ${G.line("M205 200 H285", supply, "#38bdf8")}
+      ${G.line("M405 200 H500", supply, "#38bdf8")}
+      ${G.line("M650 260 V330 H285 V250", supply, "#38bdf8")}
+      ${G.line("M125 330 H165", h.ct1, "#10b981")}
+
+      <g transform="translate(40,155)" class="interactive-equip" data-equip="OA-LOUVER" data-type="OUTSIDE AIR INTAKE">
+        <rect width="50" height="90" rx="5" fill="#0f172a" stroke="#38bdf8" stroke-width="2"></rect>
+        <path d="M8 25 H42 M8 42 H42 M8 59 H42" stroke="#38bdf8" stroke-width="3"></path>
+        <text x="25" y="108" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">OUTSIDE AIR</text>
+      </g>
+
+      ${G.valve(185, 200, "DMP-OA", h.d1)}
+
+      <g transform="translate(285,140)" class="interactive-equip" data-equip="AHU-1" data-type="AIR HANDLING UNIT">
+        <rect width="120" height="120" rx="8" fill="#0f172a" stroke="${supply ? "#10b981" : "#64748b"}" stroke-width="3"></rect>
+        <text x="60" y="25" fill="#e2e8f0" font-size="12" font-family="Orbitron" text-anchor="middle">AHU-1</text>
+        <g transform="translate(60,64)" class="${supply ? "spin-center" : ""}">
+          <circle r="23" fill="none" stroke="${supply ? "#10b981" : "#64748b"}" stroke-width="3"></circle>
+          <path d="M0 0 C9 -16 18 -4 6 3 M0 0 C16 9 4 18 -3 6 M0 0 C-9 16 -18 4 -6 -3 M0 0 C-16 -9 -4 -18 3 -6"
+                fill="${supply ? "#10b981" : "#64748b"}"></path>
+        </g>
+        <text x="60" y="108" fill="#38bdf8" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${Math.round(h.flow)} CFM</text>
+      </g>
+
+      <g transform="translate(500,120)" class="interactive-equip" data-equip="ZONE-401" data-type="CONDITIONED ZONE">
+        <rect width="150" height="140" rx="8" fill="#0f172a" stroke="${h.sTemp > 78 ? "#ef4444" : "#38bdf8"}" stroke-width="3"></rect>
+        <text x="75" y="27" fill="#e2e8f0" font-size="12" font-family="Orbitron" text-anchor="middle">ZONE-401</text>
+        <text x="75" y="58" fill="#38bdf8" font-size="17" font-family="Share Tech Mono" text-anchor="middle">${num(h.sTemp)} °F</text>
+        <text x="75" y="80" fill="#10b981" font-size="12" font-family="Share Tech Mono" text-anchor="middle">${num(h.rh, 0)} %RH</text>
+        <text x="75" y="106" fill="#94a3b8" font-size="10" font-family="Orbitron" text-anchor="middle">${Math.round(h.occupancy)} OCCUPANTS</text>
+      </g>
+
+      <g transform="translate(165,290)" class="interactive-equip" data-equip="CH-1" data-type="CHILLER">
+        <rect width="120" height="80" rx="7" fill="#0f172a" stroke="${cooling ? "#38bdf8" : "#64748b"}" stroke-width="3"></rect>
+        <text x="60" y="30" fill="#e2e8f0" font-size="11" font-family="Orbitron" text-anchor="middle">CHILLER</text>
+        <text x="60" y="52" fill="${cooling ? "#38bdf8" : "#64748b"}" font-size="11" font-family="Share Tech Mono" text-anchor="middle">${cooling ? "ACTIVE" : "OFFLINE"}</text>
+      </g>
+
+      ${G.pump(250, 330, "P-CHW", h.p1)}
+      ${G.fan(125, 330, "CT-101", h.ct1)}
+      ${G.meter(580, 90, "TT-401", num(h.sTemp), "°F", h.sTemp > 78 ? "#ef4444" : "#38bdf8")}
+      ${G.meter(680, 170, "RH-401", num(h.rh, 0), "%", "#10b981")}
+    `;
+  }
+
+  function drawOil() {
+    const o = SCADA.O;
+    const mainPump = o.p1 && !SCADA.faults.has("P-Main");
+    const boosterPump = o.p2 && !SCADA.faults.has("P-BOOST");
+    const lineActive = mainPump || boosterPump;
+
+    return `
+      ${processHeader("OIL & GAS PIPELINE PUMP STATION", "SURGE TANK → ESD → PUMP TRAIN → PCV → TRANSMISSION PIPELINE")}
+      ${G.line("M145 220 H185", lineActive, "#f59e0b")}
+      ${G.line("M225 220 H270", lineActive, "#f59e0b")}
+      ${G.line("M310 220 H410", lineActive, "#f59e0b")}
+      ${G.line("M450 220 H500", lineActive, "#f59e0b")}
+      ${G.line("M540 220 H750", lineActive, "#f59e0b")}
+      ${G.line("M290 220 V310 H390 V220", boosterPump, "#f59e0b")}
+      ${o.leakOpen ? G.line("M610 220 V335", true, "#ef4444") : ""}
+
+      ${G.tank(50, 155, 95, 130, "TK-SURGE", o.tkS, "#d97706", "SURGE TANK")}
+      ${G.valve(205, 220, "ESD-101", o.esd)}
+      ${G.pump(290, 220, "P-MAIN", mainPump, SCADA.faults.has("P-Main"))}
+      ${G.pump(340, 310, "P-BOOST", boosterPump, SCADA.faults.has("P-BOOST"))}
+      ${G.valve(520, 220, "PCV-501", o.v1)}
+
+      <g transform="translate(650,175)" class="interactive-equip" data-equip="PIPELINE-501" data-type="TRANSMISSION PIPELINE">
+        <rect width="110" height="90" rx="8" fill="#0f172a" stroke="${o.press > 500 ? "#ef4444" : "#f59e0b"}" stroke-width="3"></rect>
+        <text x="55" y="29" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">LINE-501</text>
+        <text x="55" y="50" fill="#f59e0b" font-size="13" font-family="Share Tech Mono" text-anchor="middle">${Math.round(o.press)} PSI</text>
+        <text x="55" y="70" fill="#38bdf8" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${Math.round(o.flow)} BBL/H</text>
+      </g>
+
+      ${o.leakOpen ? `
+        <g transform="translate(590,335)" class="interactive-equip" data-equip="LEAK-501" data-type="SIMULATED LEAK">
+          <path d="M0 -15 C15 5 15 18 0 30 C-15 18 -15 5 0 -15" fill="#ef4444"></path>
+          <text x="0" y="48" fill="#ef4444" font-size="10" font-family="Orbitron" text-anchor="middle">LEAK</text>
+        </g>` : ""}
+
+      ${G.meter(430, 172, "PT-501", Math.round(o.press), "PSI", o.press > 500 ? "#ef4444" : "#f59e0b")}
+      ${G.meter(320, 155, "VT-501", num(o.vib, 2), "G", o.vib > 1.1 ? "#ef4444" : "#38bdf8")}
+    `;
+  }
+
+  function drawFood() {
+    const f = SCADA.F;
+    const productFlow = f.fil && !SCADA.faults.has("M-FIL");
+    const pasteurizer = f.hx;
+
+    return `
+      ${processHeader("FOOD & BEVERAGE PASTEURIZATION", "PRODUCT HOLD → TRANSFER → HEAT EXCHANGER → FILLER → PACKAGED PRODUCT")}
+      ${G.line("M150 220 H195", productFlow, "#fde047")}
+      ${G.line("M235 220 H305", productFlow, "#fde047")}
+      ${G.line("M385 220 H465", productFlow, "#fde047")}
+      ${G.line("M565 220 H680", productFlow, "#fde047")}
+      ${G.line("M345 165 V95 H590 V160", f.pCIP, "#06b6d4")}
+
+      ${G.tank(55, 145, 95, 135, "TK-PROD", f.tkProd, "#fde047", "PRODUCT HOLD")}
+      ${G.pump(215, 220, "P-FEED", productFlow)}
+
+      <g transform="translate(305,165)" class="interactive-equip" data-equip="HX-601" data-type="PASTEURIZER">
+        <rect width="80" height="110" rx="8" fill="#0f172a" stroke="${pasteurizer ? "#ef4444" : "#64748b"}" stroke-width="3"></rect>
+        <path d="M15 28 H65 M15 47 H65 M15 66 H65 M15 85 H65" stroke="${pasteurizer ? "#f59e0b" : "#64748b"}" stroke-width="4"></path>
+        <text x="40" y="129" fill="#94a3b8" font-size="9" font-family="Orbitron" text-anchor="middle">HX-601</text>
+      </g>
+
+      <g transform="translate(465,165)" class="interactive-equip" data-equip="FILLER-601" data-type="FILLER">
+        <rect width="100" height="110" rx="8" fill="#0f172a" stroke="${productFlow ? "#10b981" : "#64748b"}" stroke-width="3"></rect>
+        <circle cx="50" cy="55" r="26" fill="none" stroke="${productFlow ? "#10b981" : "#64748b"}" stroke-width="3" class="${productFlow ? "spin-slow" : ""}"></circle>
+        <text x="50" y="22" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">FILLER</text>
+        <text x="50" y="94" fill="#10b981" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${Math.round(f.bottleCount)} BTL</text>
+      </g>
+
+      <g transform="translate(680,175)" class="interactive-equip" data-equip="PACK-601" data-type="PACKAGING">
+        <rect width="85" height="90" rx="7" fill="#0f172a" stroke="#10b981" stroke-width="2"></rect>
+        <text x="42" y="35" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">PACK OUT</text>
+        <text x="42" y="58" fill="#10b981" font-size="10" font-family="Share Tech Mono" text-anchor="middle">READY</text>
+      </g>
+
+      ${G.tank(590, 45, 95, 90, "TK-CIP", f.tkCIP, "#06b6d4", "CIP TANK")}
+      ${G.pump(535, 95, "P-CIP", f.pCIP)}
+
+      ${G.meter(345, 135, "TT-601", num(f.temp), "°C", f.temp > 84 ? "#ef4444" : "#f59e0b")}
+      ${G.meter(430, 108, "LT-601", num(f.lethalityIndex, 2), "F0", "#10b981")}
+    `;
+  }
+
+  function drawCleanroom() {
+    const cl = SCADA.CL;
+    const fanOne = cl.f1;
+    const fanTwo = cl.f2;
+    const scrubber = cl.s1;
+
+    return `
+      ${processHeader("SEMICONDUCTOR CLEANROOM FAB", "HEPA FAN FILTER UNITS → POSITIVE-PRESSURE FAB → EXHAUST / SCRUBBER")}
+      ${G.line("M255 110 V150", fanOne, "#38bdf8")}
+      ${G.line("M545 110 V150", fanTwo, "#38bdf8")}
+      ${G.line("M650 250 H735", scrubber, "#a855f7")}
+      ${G.line("M400 350 V390 H675", scrubber, "#a855f7")}
+
+      <g transform="translate(150,150)" class="interactive-equip" data-equip="FAB-701" data-type="CLASSIFIED CLEANROOM">
+        <rect width="500" height="200" rx="9" fill="#07111d" stroke="${cl.part > 5000 ? "#ef4444" : "#38bdf8"}" stroke-width="3" stroke-dasharray="10,5"></rect>
+        <text x="250" y="28" fill="#38bdf8" font-size="13" font-family="Orbitron" text-anchor="middle">CLASS 1 FAB ENCLOSURE</text>
+        <text x="250" y="82" fill="${cl.part > 5000 ? "#ef4444" : "#10b981"}" font-size="20" font-family="Share Tech Mono" text-anchor="middle">${Math.round(cl.part)} PART./m³</text>
+        <text x="250" y="110" fill="#e2e8f0" font-size="14" font-family="Share Tech Mono" text-anchor="middle">${num(cl.diff, 1)} Pa ΔP</text>
+        <text x="250" y="139" fill="#94a3b8" font-size="11" font-family="Orbitron" text-anchor="middle">${cl.personnel} PERSONNEL · ${num(cl.rh, 0)} %RH · ${num(cl.temp)} °F</text>
+        ${cl.contaminationExcursion ? `<text x="250" y="172" fill="#ef4444" font-size="12" font-family="Orbitron" text-anchor="middle">CONTAMINATION EXCURSION ACTIVE</text>` : ""}
+      </g>
+
+      ${G.fan(255, 90, "FFU-101", fanOne)}
+      ${G.fan(545, 90, "FFU-102", fanTwo)}
+      ${G.fan(705, 250, "SCRUBBER", scrubber)}
+
+      ${G.meter(320, 245, "DPT-701", num(cl.diff, 0), "Pa", cl.diff < 8 ? "#ef4444" : "#38bdf8")}
+      ${G.meter(470, 245, "PRT-701", Math.round(cl.part), "P/M³", cl.part > 5000 ? "#ef4444" : "#10b981")}
+    `;
+  }
+
+  function drawDataCenter() {
+    const d = SCADA.D;
+    const cracOne = d.crac1;
+    const cracTwo = d.crac2;
+    const ups = d.ups;
+
+    return `
+      ${processHeader("DATA CENTER POWER & CRAC", "UTILITY / UPS → PDU → SERVER RACKS · CRAC SUPPLY / RETURN AIR LOOP")}
+      ${G.line("M115 210 H180", ups, "#eab308", "ELEC")}
+      ${G.line("M250 210 H340", ups, "#eab308", "ELEC")}
+      ${G.line("M460 210 H560", ups, "#eab308", "ELEC")}
+      ${G.line("M180 340 H340", cracOne, "#38bdf8")}
+      ${G.line("M460 340 H640", cracTwo, "#38bdf8")}
+      ${G.line("M340 340 V285", cracOne, "#38bdf8")}
+      ${G.line("M560 340 V285", cracTwo, "#38bdf8")}
+
+      <g transform="translate(40,165)" class="interactive-equip" data-equip="UPS-101" data-type="UNINTERRUPTIBLE POWER SUPPLY">
+        <rect width="75" height="90" rx="7" fill="#0f172a" stroke="${ups ? "#10b981" : "#ef4444"}" stroke-width="3"></rect>
+        <text x="37" y="28" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">UPS-101</text>
+        <text x="37" y="52" fill="${ups ? "#10b981" : "#ef4444"}" font-size="11" font-family="Share Tech Mono" text-anchor="middle">${ups ? "ONLINE" : "OFFLINE"}</text>
+        <text x="37" y="72" fill="#38bdf8" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${num(d.batSoC, 0)}% SOC</text>
+      </g>
+
+      <g transform="translate(180,175)" class="interactive-equip" data-equip="PDU-801" data-type="POWER DISTRIBUTION UNIT">
+        <rect width="70" height="70" rx="6" fill="#0f172a" stroke="#eab308" stroke-width="3"></rect>
+        <text x="35" y="30" fill="#e2e8f0" font-size="10" font-family="Orbitron" text-anchor="middle">PDU</text>
+        <text x="35" y="49" fill="#eab308" font-size="10" font-family="Share Tech Mono" text-anchor="middle">${Math.round(d.kw)} kW</text>
+      </g>
+
+      <g transform="translate(340,125)" class="interactive-equip" data-equip="SERVER-HALL" data-type="IT LOAD">
+        <rect width="220" height="160" rx="8" fill="#0f172a" stroke="${d.returnTemp > 100 ? "#ef4444" : "#64748b"}" stroke-width="3"></rect>
+        <rect x="18" y="30" width="44" height="105" fill="#111827" stroke="#475569"></rect>
+        <rect x="88" y="30" width="44" height="105" fill="#111827" stroke="#475569"></rect>
+        <rect x="158" y="30" width="44" height="105" fill="#111827" stroke="#475569"></rect>
+        <text x="110" y="22" fill="#e2e8f0" font-size="12" font-family="Orbitron" text-anchor="middle">SERVER HALL</text>
+        <text x="110" y="150" fill="#38bdf8" font-size="12" font-family="Share Tech Mono" text-anchor="middle">${Math.round(d.itLoadKW)} kW IT LOAD</text>
+      </g>
+
+      ${G.fan(220, 340, "CRAC-1", cracOne)}
+      ${G.fan(620, 340, "CRAC-2", cracTwo)}
+      ${G.meter(450, 95, "TT-801", num(d.sTemp), "°F", d.sTemp > 90 ? "#ef4444" : "#38bdf8")}
+      ${G.meter(560, 105, "RT-801", num(d.returnTemp), "°F", d.returnTemp > 100 ? "#ef4444" : "#f59e0b")}
+    `;
+  }
+
+  /*
+    Water uses the original visual schematic. Scenarios 2–8 use the enhanced,
+    connected graphics above.
+  */
+  window.renderSVG = function () {
+    ensureEnhancedState();
+
+    const svg = document.getElementById("pid-svg");
+    if (!svg) return;
+
+    if (SCADA.scenario === "WATER") {
+      baseRenderSVG();
+      return;
+    }
+
+    let markup = "";
+
+    if (SCADA.scenario === "CHEM") markup = drawChemical();
+    if (SCADA.scenario === "POWER") markup = drawPower();
+    if (SCADA.scenario === "HVAC") markup = drawHVAC();
+    if (SCADA.scenario === "OIL") markup = drawOil();
+    if (SCADA.scenario === "FOOD") markup = drawFood();
+    if (SCADA.scenario === "CLEAN") markup = drawCleanroom();
+    if (SCADA.scenario === "DATA") markup = drawDataCenter();
+
+    svg.innerHTML = markup;
+  };
+
+  function controlPanel(title, inner, color = "cyan") {
+    return `
+      <div class="panel-bezel p-3 rounded-lg">
+        <h3 class="font-tech text-xs font-bold text-${color}-400 mb-2 border-b border-slate-700 pb-1">${title}</h3>
+        ${inner}
+      </div>`;
+  }
+
+  function commandButtons(group, key, state, onLabel = "ON / OPEN", offLabel = "OFF / CLOSE") {
+    return `
+      <div class="flex gap-1 mt-2">
+        <button
+          onclick="FacilityAlphaV2.command('${group}', '${key}', true)"
+          class="flex-1 py-1.5 rounded text-[10px] font-bold border btn-tactile ${
+            state
+              ? "bg-emerald-600 text-white border-emerald-400 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+              : "bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-100"
+          }"
+        >${onLabel}</button>
+        <button
+          onclick="FacilityAlphaV2.command('${group}', '${key}', false)"
+          class="flex-1 py-1.5 rounded text-[10px] font-bold border btn-tactile ${
+            !state
+              ? "bg-rose-700 text-white border-rose-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]"
+              : "bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-100"
+          }"
+        >${offLabel}</button>
+      </div>`;
+  }
+
+  function sliderControl(id, label, group, key, value, min, max, step, unit, digits = 0) {
+    return `
+      <div class="mt-2">
+        <div class="text-[10px] text-slate-300 flex justify-between font-mono">
+          <span>${label}</span>
+          <span id="${id}-readout" class="text-cyan-400 font-bold">${Number(value).toFixed(digits)} ${unit}</span>
+        </div>
+        <input
+          type="range"
+          min="${min}"
+          max="${max}"
+          step="${step}"
+          value="${value}"
+          oninput="FacilityAlphaV2.slider('${group}', '${key}', this.value, '${id}-readout', '${unit}', ${digits})"
+          class="w-full h-1.5 bg-slate-800 rounded appearance-none cursor-pointer accent-cyan-400 mt-1"
+        >
+      </div>`;
+  }
+
+  function wireWaterSliders() {
+    const pane = document.getElementById("left-controls");
+    if (!pane) return;
+
+    const sliders = [...pane.querySelectorAll('input[type="range"]')];
+    let bindings = [value => { SCADA.W.v1 = value; }];
+
+    if (SCADA.cmp !== "SIMPLE") {
+      bindings.push(value => { SCADA.W.v3 = value; });
+    }
+
+    if (SCADA.cmp === "ADVANCED") {
+      bindings.push(value => { SCADA.W.v4 = value; });
+      bindings.push(value => { SCADA.W.v5 = value; });
+    }
+
+    sliders.forEach((slider, index) => {
+      if (!bindings[index]) return;
+
+      slider.removeAttribute("oninput");
+      slider.oninput = null;
+
+      slider.addEventListener("input", function () {
+        const value = Number(this.value);
+
+        if (SCADA.mode === "AUTO") {
+          setControlMode("MANUAL");
+        }
+
+        bindings[index](value);
+
+        const prior = this.previousElementSibling;
+        const spans = prior ? prior.querySelectorAll("span") : [];
+        if (spans.length) {
+          spans[spans.length - 1].textContent = `${Math.round(value)}%`;
+        }
+
+        renderSVG();
+        telemetryLoop();
+      });
+    });
+  }
+
+  function renderEnhancedControls() {
+    const pane = document.getElementById("left-controls");
+    if (!pane) return;
+
+    ensureEnhancedState();
+
+    const c = SCADA.C;
+    const p = SCADA.P;
+    const h = SCADA.H;
+    const o = SCADA.O;
+    const f = SCADA.F;
+    const cl = SCADA.CL;
+    const d = SCADA.D;
+
+    let html = "";
+
+    if (SCADA.scenario === "CHEM") {
+      html += controlPanel("REACTANT PUMP A [P-A]", commandButtons("C", "p1", c.p1));
+      html += controlPanel("REACTANT PUMP B [P-B]", commandButtons("C", "p2", c.p2));
+      html += controlPanel("AGITATOR [AG-101]", commandButtons("C", "ag", c.ag, "START", "STOP"));
+      html += controlPanel("HEATER JACKET", commandButtons("C", "h", c.h, "HEAT ENABLE", "HEAT OFF"), "amber");
+      html += controlPanel(
+        "REACTOR PROCESS SETTINGS",
+        sliderControl("c-jacket", "Jacket Setpoint", "C", "jacketSet", c.jacketSet, 20, 95, 1, "°C") +
+        sliderControl("c-cooling", "Cooling Valve", "C", "coolingValve", c.coolingValve, 0, 100, 1, "%") +
+        sliderControl("c-agitator", "Agitator Speed", "C", "agitatorSpeed", c.agitatorSpeed, 0, 100, 1, "%") +
+        sliderControl("c-discharge", "Product Discharge Valve", "C", "vDis", c.vDis, 0, 100, 1, "%"),
+        "amber"
+      );
+    }
+
+    if (SCADA.scenario === "POWER") {
+      html += controlPanel("MAIN BREAKER [CB-MAIN]", commandButtons("P", "cbM", p.cbM, "CLOSE", "OPEN"));
+      html += controlPanel("FEEDER BREAKER 1 [CB-F1]", commandButtons("P", "cb1", p.cb1, "CLOSE", "OPEN"));
+      html += controlPanel("FEEDER BREAKER 2 [CB-F2]", commandButtons("P", "cb2", p.cb2, "CLOSE", "OPEN"));
+      html += controlPanel("BUS TIE BREAKER [CB-TIE]", commandButtons("P", "cbTie", p.cbTie, "CLOSE", "OPEN"));
+      html += controlPanel(
+        "POWER FLOW SETTINGS",
+        sliderControl("p-demand", "Load Demand", "P", "demandMW", p.demandMW, 5, 115, 1, "MW") +
+        sliderControl("p-tap", "Transformer Tap", "P", "tapPosition", p.tapPosition, -10, 10, 0.5, "%", 1) +
+        sliderControl("p-pf", "Power Factor", "P", "powerFactor", p.powerFactor, 0.70, 1.00, 0.01, "", 2),
+        "amber"
+      );
+    }
+
+    if (SCADA.scenario === "HVAC") {
+      html += controlPanel("SUPPLY FAN [AHU-1]", commandButtons("H", "ah1", h.ah1, "START", "STOP"));
+      html += controlPanel("CHILLER [CH-1]", commandButtons("H", "ch1", h.ch1, "START", "STOP"));
+      html += controlPanel("CHW PUMP [P-CHW]", commandButtons("H", "p1", h.p1, "START", "STOP"));
+      html += controlPanel("COOLING TOWER [CT-101]", commandButtons("H", "ct1", h.ct1, "START", "STOP"));
+      html += controlPanel(
+        "ZONE / AIRSIDE SETTINGS",
+        sliderControl("h-damper", "Outside-Air Damper", "H", "d1", h.d1, 0, 100, 1, "%") +
+        sliderControl("h-setpoint", "Zone Setpoint", "H", "setpointF", h.setpointF, 64, 80, 1, "°F") +
+        sliderControl("h-occ", "Occupancy", "H", "occupancy", h.occupancy, 0, 250, 1, "PERS.") +
+        sliderControl("h-coil", "Cooling Coil Command", "H", "coilCommand", h.coilCommand, 0, 100, 1, "%")
+      );
+    }
+
+    if (SCADA.scenario === "OIL") {
+      html += controlPanel("MAIN PUMP [P-MAIN]", commandButtons("O", "p1", o.p1, "START", "STOP"));
+      html += controlPanel("BOOSTER PUMP [P-BOOST]", commandButtons("O", "p2", o.p2, "START", "STOP"));
+      html += controlPanel(
+        "PIPELINE / VALVE CONTROLS",
+        sliderControl("o-esd", "ESD Isolation Valve", "O", "esd", o.esd, 0, 100, 1, "%") +
+        sliderControl("o-pcv", "Pressure-Control Valve", "O", "v1", o.v1, 0, 100, 1, "%") +
+        sliderControl("o-inlet", "Pump Discharge Pressure", "O", "inletPSI", o.inletPSI, 175, 700, 5, "PSI") +
+        sliderControl("o-backpressure", "Delivery Back Pressure", "O", "deliveryPSI", o.deliveryPSI, 50, 420, 5, "PSI"),
+        "amber"
+      );
+      html += controlPanel(
+        "FAULT INJECTION",
+        `<button onclick="FacilityAlphaV2.toggleOilLeak()" class="w-full py-1.5 rounded text-[10px] font-bold border btn-tactile ${
+          o.leakOpen
+            ? "bg-rose-700 text-white border-rose-400"
+            : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+        }">${o.leakOpen ? "ISOLATE SIMULATED LEAK" : "INJECT PIPELINE LEAK"}</button>`,
+        "rose"
+      );
+    }
+
+    if (SCADA.scenario === "FOOD") {
+      html += controlPanel("FILLER LINE [FIL-601]", commandButtons("F", "fil", f.fil, "START", "STOP"));
+      html += controlPanel("PASTEURIZER HX [HX-601]", commandButtons("F", "hx", f.hx, "HEAT ON", "HEAT OFF"), "amber");
+      html += controlPanel("CIP PUMP [P-CIP]", commandButtons("F", "pCIP", f.pCIP, "START", "STOP"));
+      html += controlPanel(
+        "THERMAL PROCESS SETTINGS",
+        sliderControl("f-target", "Pasteurization Target", "F", "targetTemp", f.targetTemp, 62, 85, 0.5, "°C", 1) +
+        sliderControl("f-duty", "Heater Duty", "F", "heaterDuty", f.heaterDuty, 0, 100, 1, "%") +
+        sliderControl("f-rate", "Product Feed Rate", "F", "productRate", f.productRate, 300, 4200, 50, "L/H")
+      );
+    }
+
+    if (SCADA.scenario === "CLEAN") {
+      html += controlPanel("HEPA FAN FILTER [FFU-101]", commandButtons("CL", "f1", cl.f1, "START", "STOP"));
+      html += controlPanel("HEPA FAN FILTER [FFU-102]", commandButtons("CL", "f2", cl.f2, "START", "STOP"));
+      html += controlPanel("EXHAUST SCRUBBER", commandButtons("CL", "s1", cl.s1, "START", "STOP"));
+      html += controlPanel(
+        "CLEANROOM SETTINGS",
+        sliderControl("cl-personnel", "Personnel Count", "CL", "personnel", cl.personnel, 0, 30, 1, "PERS.") +
+        sliderControl("cl-speed", "FFU Speed", "CL", "ffuSpeed", cl.ffuSpeed, 0, 100, 1, "%") +
+        sliderControl("cl-exhaust", "Exhaust Balance", "CL", "exhaustFlow", cl.exhaustFlow, 0, 100, 1, "%")
+      );
+      html += controlPanel(
+        "FAULT INJECTION",
+        `<button onclick="FacilityAlphaV2.toggleCleanExcursion()" class="w-full py-1.5 rounded text-[10px] font-bold border btn-tactile ${
+          cl.contaminationExcursion
+            ? "bg-rose-700 text-white border-rose-400"
+            : "bg-slate-800 text-slate-300 border-slate-700 hover:text-white"
+        }">${cl.contaminationExcursion ? "CLEAR CONTAMINATION EXCURSION" : "INJECT CONTAMINATION EXCURSION"}</button>`,
+        "rose"
+      );
+    }
+
+    if (SCADA.scenario === "DATA") {
+      html += controlPanel("CRAC UNIT 1", commandButtons("D", "crac1", d.crac1, "START", "STOP"));
+      html += controlPanel("CRAC UNIT 2", commandButtons("D", "crac2", d.crac2, "START", "STOP"));
+      html += controlPanel("UPS BATTERY SYSTEM", commandButtons("D", "ups", d.ups, "ENABLE", "DISABLE"));
+      html += controlPanel(
+        "THERMAL / IT LOAD SETTINGS",
+        sliderControl("d-load", "IT Load", "D", "itLoadKW", d.itLoadKW, 250, 2000, 25, "kW") +
+        sliderControl("d-setpoint", "Supply-Air Setpoint", "D", "supplySetpoint", d.supplySetpoint, 62, 82, 1, "°F") +
+        sliderControl("d-cooling", "CRAC Cooling Command", "D", "coolingCommand", d.coolingCommand, 0, 100, 1, "%")
+      );
+    }
+
+    pane.innerHTML = html;
+  }
+
+  /*
+    Direct commands fix the original on/off control reliability issue.
+    The state is changed directly, then all visible process displays refresh.
+  */
+  window.FacilityAlphaV2 = {
+    command(group, key, value) {
+      ensureEnhancedState();
+
+      if (SCADA.mode === "AUTO") {
+        setControlMode("MANUAL");
+        toast("Switched to MANUAL mode due to operator command");
+      }
+
+      if (!SCADA[group]) return;
+
+      SCADA[group][key] = value;
+
+      log(
+        "OPERATOR",
+        `${group}.${key} command set to ${value ? "ON/CLOSED" : "OFF/OPEN"}`,
+        "INFO"
+      );
+
+      renderControls();
+      renderSVG();
+      telemetryLoop();
+    },
+
+    slider(group, key, rawValue, readoutId, unit, digits) {
+      ensureEnhancedState();
+
+      if (SCADA.mode === "AUTO") {
+        setControlMode("MANUAL");
+        toast("Switched to MANUAL mode due to operator adjustment");
+      }
+
+      const value = Number(rawValue);
+      if (!SCADA[group]) return;
+
+      SCADA[group][key] = value;
+
+      const readout = document.getElementById(readoutId);
+      if (readout) {
+        readout.textContent = `${value.toFixed(Number(digits))} ${unit}`;
+      }
+
+      renderSVG();
+      telemetryLoop();
+    },
+
+    toggleOilLeak() {
+      ensureEnhancedState();
+
+      if (SCADA.mode === "AUTO") {
+        setControlMode("MANUAL");
+      }
+
+      SCADA.O.leakOpen = !SCADA.O.leakOpen;
+      log(
+        "TRAINING",
+        SCADA.O.leakOpen ? "Simulated pipeline leak injected." : "Simulated pipeline leak cleared.",
+        SCADA.O.leakOpen ? "WARN" : "INFO"
+      );
+
+      toast(SCADA.O.leakOpen ? "⚠️ Pipeline leak enabled" : "Pipeline leak isolated");
+      renderControls();
+      renderSVG();
+      telemetryLoop();
+    },
+
+    toggleCleanExcursion() {
+      ensureEnhancedState();
+
+      if (SCADA.mode === "AUTO") {
+        setControlMode("MANUAL");
+      }
+
+      SCADA.CL.contaminationExcursion = !SCADA.CL.contaminationExcursion;
+      log(
+        "TRAINING",
+        SCADA.CL.contaminationExcursion
+          ? "Cleanroom contamination excursion injected."
+          : "Cleanroom contamination excursion cleared.",
+        SCADA.CL.contaminationExcursion ? "WARN" : "INFO"
+      );
+
+      toast(
+        SCADA.CL.contaminationExcursion
+          ? "⚠️ Cleanroom contamination excursion enabled"
+          : "Cleanroom contamination source isolated"
+      );
+
+      renderControls();
+      renderSVG();
+      telemetryLoop();
+    }
+  };
+
+  /*
+    Scenario 1 remains on original controls, including visual layout.
+    Its sliders receive working event listeners without changing its model.
+  */
+  window.renderControls = function () {
+    ensureEnhancedState();
+
+    if (SCADA.scenario === "WATER") {
+      baseRenderControls();
+      wireWaterSliders();
+      return;
+    }
+
+    renderEnhancedControls();
+  };
+
+  function enhancedAutoControl() {
+    ensureEnhancedState();
+
+    const c = SCADA.C;
+    const p = SCADA.P;
+    const h = SCADA.H;
+    const o = SCADA.O;
+    const f = SCADA.F;
+    const cl = SCADA.CL;
+    const d = SCADA.D;
+
+    if (SCADA.scenario === "CHEM") {
+      c.p1 = c.rx < 72 && c.tkA > 4;
+      c.p2 = SCADA.cmp === "ADVANCED" && c.rx < 72 && c.tkB > 4;
+      c.ag = c.rx > 8;
+      c.h = c.temp < c.jacketSet - 1;
+      c.coolingValve = clamp(45 + (c.temp - c.jacketSet) * 9, 0, 100);
+      c.vDis = c.rx > 85 && c.temp >= c.jacketSet - 2 ? 55 : 0;
+    }
+
+    if (SCADA.scenario === "POWER") {
+      p.cbM = true;
+      p.cb1 = p.demandMW > 0;
+      p.cb2 = SCADA.cmp !== "SIMPLE" && p.demandMW > 50;
+      p.cbTie = SCADA.cmp === "ADVANCED" && p.demandMW > 90;
+    }
+
+    if (SCADA.scenario === "HVAC") {
+      h.ah1 = true;
+      h.d1 = clamp(18 + h.occupancy * 0.26, 15, 85);
+      h.coilCommand = clamp(45 + (h.sTemp - h.setpointF) * 14, 0, 100);
+      h.ch1 = h.coilCommand > 15;
+      h.p1 = h.ch1;
+      h.ct1 = SCADA.cmp === "ADVANCED" && h.ch1;
+      h.v1 = clamp(35 + h.coilCommand * 0.62, 20, 100);
+    }
+
+    if (SCADA.scenario === "OIL") {
+      o.esd = 100;
+      o.p1 = o.press < 245;
+      o.p2 = SCADA.cmp !== "SIMPLE" && o.press < 190;
+      o.v1 = clamp(o.v1 + (o.press < 180 ? 2 : o.press > 250 ? -2 : 0), 25, 100);
+    }
+
+    if (SCADA.scenario === "FOOD") {
+      f.fil = f.tkProd > 4;
+      f.hx = f.temp < f.targetTemp + 1;
+      f.heaterDuty = clamp(48 + (f.targetTemp - f.temp) * 9, 0, 100);
+      f.pCIP = SCADA.cmp === "ADVANCED" && f.tkProd < 8 && f.tkCIP > 10;
+    }
+
+    if (SCADA.scenario === "CLEAN") {
+      cl.f1 = true;
+      cl.f2 = SCADA.cmp !== "SIMPLE";
+      cl.s1 = SCADA.cmp === "ADVANCED" && cl.part > 300;
+      cl.ffuSpeed = clamp(58 + cl.part / 45, 40, 100);
+    }
+
+    if (SCADA.scenario === "DATA") {
+      d.ups = true;
+      d.crac1 = true;
+      d.crac2 = SCADA.cmp !== "SIMPLE" && d.returnTemp > d.supplySetpoint + 7;
+      d.coolingCommand = clamp(48 + (d.returnTemp - d.supplySetpoint) * 7, 0, 100);
+    }
+  }
+
+  /*
+    Physics update for Scenarios 2–8.
+    Values are simplified and bounded for operator-training behavior; they are
+    not engineering design calculations or real facility operating limits.
+  */
+  window.physicsLoop = function () {
+    ensureEnhancedState();
+
+    if (SCADA.scenario === "WATER") {
+      basePhysicsLoop();
+      return;
+    }
+
+    if (SCADA.estopActive && !SCADA.underAttack) return;
+
+    if (SCADA.underAttack) {
+      applyStuxnet();
+      renderSVG();
+      telemetryLoop();
+      return;
+    }
+
+    if (SCADA.mode === "AUTO") {
+      enhancedAutoControl();
+    }
+
+    const dt = 0.2;
+
+    if (SCADA.scenario === "CHEM") {
+      const c = SCADA.C;
+
+      const feedA = c.p1 && !SCADA.faults.has("P-A") ? 0.10 : 0;
+      const feedB = c.p2 && !SCADA.faults.has("P-B") ? 0.08 : 0;
+      const discharge = (c.vDis / 100) * 0.15;
+
+      c.tkA = clamp(c.tkA - feedA, 0, 100);
+      c.tkB = clamp(c.tkB - feedB, 0, 100);
+      c.rx = clamp(c.rx + feedA + feedB - discharge, 0, 100);
+      c.tkProd = clamp(c.tkProd + discharge, 0, 100);
+
+      const mixing = c.ag ? Math.max(0.18, c.agitatorSpeed / 100) : 0.08;
+      const temperatureFactor = Math.exp(clamp((c.temp - 28) / 45, -1.2, 1.6));
+      c.reactionRate = (c.rx / 100) * mixing * temperatureFactor * 0.22;
+      c.conversion = clamp(c.conversion + c.reactionRate * dt * 0.09, 0, 100);
+
+      const jacketHeat = c.h ? Math.max(0, c.jacketSet - c.temp) * 0.18 : 0;
+      const reactionHeat = c.reactionRate * 5.8;
+      const cooling = (c.coolingValve / 100) * Math.max(0, c.temp - 22) * 0.13;
+
+      c.temp = clamp(c.temp + (jacketHeat + reactionHeat - cooling) * dt, 20, 165);
+      c.press = clamp(1 + Math.max(0, c.temp - 24) * 0.052 + (c.rx / 100) * 0.42, 0.8, 18);
+
+      if (c.press > 14 && !SCADA.failure) {
+        triggerFail("Reactor Overpressure — Thermal Runaway");
+      }
+    }
+
+    if (SCADA.scenario === "POWER") {
+      const p = SCADA.P;
+
+      const capacity =
+        (p.cbM ? 0 : 0) +
+        (p.cb1 ? 55 : 0) +
+        (p.cb2 ? 55 : 0) +
+        (p.cbTie ? 25 : 0);
+
+      const suppliedMW = p.cbM ? Math.min(p.demandMW, capacity) : 0;
+      const overloadMW = Math.max(0, p.demandMW - capacity);
+      const pf = clamp(p.powerFactor, 0.7, 1);
+
+      p.load = suppliedMW;
+      p.sourceKV = 13.8 * (1 + p.tapPosition / 100);
+
+      p.currentA =
+        suppliedMW > 0
+          ? (suppliedMW * 1000000) / (Math.sqrt(3) * p.sourceKV * 1000 * pf)
+          : 0;
+
+      const voltageDrop = (Math.sqrt(3) * p.currentA * p.lineResistance) / 1000;
+      p.volt = clamp(p.sourceKV - voltageDrop, 0, 15.5);
+      p.lossMW = (3 * p.currentA * p.currentA * p.lineResistance) / 1000000;
+      p.freq = clamp(60 - overloadMW * 0.035 - Math.max(0, p.lossMW - 1.5) * 0.02, 57.5, 60.05);
+    }
+
+    if (SCADA.scenario === "HVAC") {
+      const h = SCADA.H;
+
+      const occupancyLoad = h.occupancy * 0.115;
+      const envelopeLoad = (h.outsideF - h.sTemp) * 0.82;
+      const ventilationLoad = ((h.d1 / 100) * 1.25) * (h.outsideF - h.sTemp);
+
+      h.flow =
+        h.ah1 && !SCADA.faults.has("AHU-1")
+          ? (h.v1 / 100) * 8500
+          : 0;
+
+      const coolingAvailable = h.ch1 && h.p1;
+      const coolingKW = coolingAvailable ? (h.coilCommand / 100) * 48 : 0;
+
+      h.sTemp = clamp(
+        h.sTemp + ((envelopeLoad + ventilationLoad + occupancyLoad - coolingKW) / 180) * dt,
+        52,
+        105
+      );
+
+      const humidityDrive = 58 + (h.d1 / 100) * 12;
+      const drying = coolingAvailable ? h.coilCommand * 0.07 : 0;
+      h.rh = clamp(h.rh + ((humidityDrive - h.rh) * 0.012 - drying * 0.01) * dt, 22, 85);
+      h.zoneLoadKW = occupancyLoad + Math.max(0, envelopeLoad);
+    }
+
+    if (SCADA.scenario === "OIL") {
+      const o = SCADA.O;
+
+      const pumpCount =
+        (o.p1 && !SCADA.faults.has("P-Main") ? 1 : 0) +
+        (o.p2 && !SCADA.faults.has("P-BOOST") ? 1 : 0);
+
+      const effectiveInlet = pumpCount ? o.inletPSI + (pumpCount - 1) * 90 : 0;
+      const valveFactor = (o.esd / 100) * (o.v1 / 100);
+      const inletDelta = Math.max(0, effectiveInlet - o.press);
+      const outletDelta = Math.max(0, o.press - o.deliveryPSI);
+
+      const inflow = pumpCount ? 44 * pumpCount * valveFactor * Math.sqrt(inletDelta) : 0;
+      const outflow = 36 * (o.v1 / 100) * Math.sqrt(outletDelta);
+
+      o.leakRate = o.leakOpen ? 16 * Math.sqrt(Math.max(0, o.press - 25)) : 0;
+      const netFlow = inflow - outflow - o.leakRate;
+
+      o.press = clamp(o.press + netFlow * 0.023 * dt, 30, 800);
+      o.flow = clamp(outflow, 0, 1200);
+      o.linePack = clamp(o.linePack + netFlow * 0.002, 0, 100);
+      o.tkS = clamp(o.tkS + (o.press > 330 ? 0.06 : -0.02), 5, 100);
+      o.vib = clamp(0.08 + pumpCount * 0.11 + (o.flow / 1100) * 0.42 + (SCADA.faults.has("P-Main") ? 0.75 : 0), 0.05, 2.5);
+
+      if (o.press > 650 && !SCADA.failure) {
+        triggerFail("Oil Pipeline Rupture — MAOP Exceeded");
+      }
+    }
+
+    if (SCADA.scenario === "FOOD") {
+      const f = SCADA.F;
+
+      const productThermalMass = 105;
+      const heaterKW = f.hx ? (f.heaterDuty / 100) * 78 : 0;
+      const feedCoolingLoad = (f.productRate / 3600) * Math.max(0, f.temp - 8) * 0.14;
+      const naturalCooling = Math.max(0, f.temp - 20) * 0.45;
+
+      f.temp = clamp(
+        f.temp + ((heaterKW - feedCoolingLoad - naturalCooling) / productThermalMass) * dt,
+        18,
+        102
+      );
+
+      if (f.fil && !SCADA.faults.has("M-FIL") && f.tkProd > 0) {
+        const processed = clamp((f.productRate / 3600) * dt / 1000, 0, f.tkProd);
+        f.tkProd = clamp(f.tkProd - processed, 0, 100);
+        f.bottleCount += Math.round((f.productRate / 3600) * dt * 1.5);
+        f.flow = f.productRate;
+      } else {
+        f.flow = 0;
+      }
+
+      f.holdSeconds = f.temp >= f.targetTemp
+        ? f.holdSeconds + dt
+        : Math.max(0, f.holdSeconds - dt * 0.25);
+
+      const lethalityRate = Math.pow(10, (f.temp - f.targetTemp) / 7);
+      f.lethalityIndex = clamp(f.lethalityIndex + Math.max(0, lethalityRate) * dt / 60, 0, 99);
+      f.qualityIndex = clamp(100 - Math.max(0, f.temp - 80) * 1.7 - Math.max(0, f.lethalityIndex - 7) * 0.45, 60, 100);
+
+      if (f.pCIP && f.tkCIP > 0) {
+        f.tkCIP = clamp(f.tkCIP - 0.03, 0, 100);
+      }
+    }
+
+    if (SCADA.scenario === "CLEAN") {
+      const cl = SCADA.CL;
+
+      const activeFans = (cl.f1 ? 1 : 0) + (cl.f2 ? 1 : 0);
+      const supplyFlow = activeFans * (cl.ffuSpeed / 100) * 5200;
+      const exhaustFlow = (cl.exhaustFlow / 100) * 8200;
+
+      const personnelGeneration = cl.personnel * 42;
+      const excursionGeneration = cl.contaminationExcursion ? 2600 : 0;
+      const airRemoval = (supplyFlow / 3600 / cl.roomVolume) * 0.9997 * cl.part;
+      const scrubberRemoval = cl.s1 ? cl.part * 0.022 : 0;
+
+      cl.part = clamp(cl.part + (personnelGeneration + excursionGeneration - airRemoval - scrubberRemoval) * dt, 5, 50000);
+
+      const pressureTarget = (supplyFlow - exhaustFlow) * 0.014;
+      cl.diff = clamp(cl.diff + (pressureTarget - cl.diff) * 0.08 * dt, -30, 120);
+      cl.rh = clamp(cl.rh + ((43 + cl.personnel * 0.18) - cl.rh) * 0.015 * dt, 25, 68);
+      cl.temp = clamp(cl.temp + ((68 + cl.personnel * 0.05) - cl.temp) * 0.015 * dt, 60, 82);
+    }
+
+    if (SCADA.scenario === "DATA") {
+      const d = SCADA.D;
+
+      const coolingUnits = (d.crac1 ? 1 : 0) + (d.crac2 ? 1 : 0);
+      const coolingKW = coolingUnits * (d.coolingCommand / 100) * 330;
+      const heatGainKW = d.itLoadKW * 0.98;
+
+      d.returnTemp = clamp(d.returnTemp + ((heatGainKW - coolingKW) / 550) * dt, 60, 145);
+      d.sTemp = clamp(d.supplySetpoint + (d.returnTemp - d.supplySetpoint) * (0.42 - coolingUnits * 0.07), 55, 115);
+      d.kw = d.ups ? d.itLoadKW + coolingUnits * 95 : 0;
+
+      if (!d.ups) {
+        d.sTemp = clamp(d.sTemp + 0.6 * dt, 55, 135);
+      }
+
+      if (d.returnTemp > 108 && !SCADA.failure) {
+        triggerFail("Data Center Thermal Runaway — CRAC Capacity Lost");
+      }
+    }
+
+    renderSVG();
+    telemetryLoop();
+  };
+
+  window.telemetryLoop = function () {
+    ensureEnhancedState();
+    baseTelemetryLoop();
+
+    if (SCADA.scenario === "POWER") {
+      const p = SCADA.P;
+      const volts = document.getElementById("elec-volts");
+      const amps = document.getElementById("elec-amps");
+      const freq = document.getElementById("elec-freq");
+
+      if (volts) volts.textContent = `${Math.round(p.volt * 1000).toLocaleString()} V`;
+      if (amps) amps.textContent = `${Math.round(p.currentA).toLocaleString()} A`;
+      if (freq) freq.textContent = `${num(p.freq, 2)} Hz`;
+    }
+  };
+
+  window.resetScenario = function () {
+    baseResetScenario();
+    ensureEnhancedState();
+
+    SCADA.C.jacketSet = 62;
+    SCADA.C.coolingValve = 48;
+    SCADA.C.agitatorSpeed = 78;
+    SCADA.C.conversion = 0;
+    SCADA.C.reactionRate = 0;
+
+    SCADA.P.demandMW = 45;
+    SCADA.P.tapPosition = 0;
+    SCADA.P.powerFactor = 0.92;
+    SCADA.P.lineResistance = 0.18;
+    SCADA.P.currentA = 0;
+    SCADA.P.lossMW = 0;
+
+    SCADA.H.setpointF = 72;
+    SCADA.H.outsideF = 92;
+    SCADA.H.occupancy = 85;
+    SCADA.H.coilCommand = 55;
+    SCADA.H.zoneLoadKW = 0;
+
+    SCADA.O.inletPSI = 340;
+    SCADA.O.deliveryPSI = 155;
+    SCADA.O.leakOpen = false;
+    SCADA.O.leakRate = 0;
+    SCADA.O.linePack = 50;
+
+    SCADA.F.targetTemp = 72;
+    SCADA.F.heaterDuty = 62;
+    SCADA.F.productRate = 1800;
+    SCADA.F.holdSeconds = 0;
+    SCADA.F.lethalityIndex = 0;
+    SCADA.F.qualityIndex = 100;
+
+    SCADA.CL.personnel = 8;
+    SCADA.CL.ffuSpeed = 82;
+    SCADA.CL.exhaustFlow = 72;
+    SCADA.CL.roomVolume = 900;
+    SCADA.CL.contaminationExcursion = false;
+
+    SCADA.D.itLoadKW = 1150;
+    SCADA.D.supplySetpoint = 72;
+    SCADA.D.returnTemp = 82;
+    SCADA.D.coolingCommand = 58;
+    SCADA.D.utilityAvailable = true;
+
+    renderControls();
+    renderSVG();
+    telemetryLoop();
+  };
+
+  let lastAutoControlRefresh = 0;
+
+  setInterval(() => {
+    if (SCADA.scenario === "WATER" || SCADA.mode !== "AUTO") return;
+    if (document.activeElement && document.activeElement.tagName === "INPUT") return;
+
+    if (Date.now() - lastAutoControlRefresh > 1200) {
+      renderControls();
+      lastAutoControlRefresh = Date.now();
+    }
+  }, 250);
+
+  ensureEnhancedState();
+})();
+</script>
+<script>
+/*
+  FACILITY ALPHA — V3 COMPLEXITY / TREND / CONTROL PATCH
+  Load after the V2 enhancement patch.
+*/
+(() => {
+  "use strict";
+
+  const v2RenderSVG = window.renderSVG;
+  const v2RenderControls = window.renderControls;
+  const v2TelemetryLoop = window.telemetryLoop;
+  const originalSwitchScenario = window.switchScenario;
+  const originalSetComplexity = window.setComplexity;
+  const originalSetControlMode = window.setControlMode;
+
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+  function resetTrendHistory() {
+    SCADA.hist = {
+      p1: Array(40).fill(0),
+      p2: Array(40).fill(0),
+      p3: Array(40).fill(0),
+      p4: Array(40).fill(0)
+    };
+
+    drawTrend();
+  }
+
+  /*
+    Replaces the original chart drawing logic.
+
+    The original code calculated:
+      y = canvasHeight - normalizedValue * canvasHeight
+
+    Any value above 1.0, negative value, NaN, or an old scenario's history
+    could push a trend point outside the canvas. This version clamps all
+    normalized trend values to [0, 1] before plotting.
+  */
+  window.drawTrend = function () {
+    const canvas = document.getElementById("trend-canvas");
+    if (!canvas) return;
+
+    const parent = canvas.parentElement;
+    if (!parent) return;
+
+    const width = Math.max(1, parent.clientWidth);
+    const height = Math.max(1, parent.clientHeight);
+
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+
+    const ctx = canvas.getContext("2d");
+    const padding = 10;
+    const plotWidth = width - padding * 2;
+    const plotHeight = height - padding * 2;
+
+    ctx.clearRect(0, 0, width, height);
+
+    /* Grid */
+    ctx.strokeStyle = "#1e293b";
+    ctx.lineWidth = 1;
+
+    for (let y = padding; y <= height - padding; y += Math.max(22, plotHeight / 4)) {
+      ctx.beginPath();
+      ctx.moveTo(padding, y);
+      ctx.lineTo(width - padding, y);
+      ctx.stroke();
+    }
+
+    for (let x = padding; x <= width - padding; x += Math.max(42, plotWidth / 8)) {
+      ctx.beginPath();
+      ctx.moveTo(x, padding);
+      ctx.lineTo(x, height - padding);
+      ctx.stroke();
+    }
+
+    const plotSeries = (series, color) => {
+      if (!Array.isArray(series) || series.length < 2) return;
+
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+
+      series.forEach((rawValue, index) => {
+        const normalized = clamp(Number.isFinite(Number(rawValue)) ? Number(rawValue) : 0, 0, 1);
+        const x = padding + (index / (series.length - 1)) * plotWidth;
+        const y = padding + (1 - normalized) * plotHeight;
+
+        if (index === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+      });
+
+      ctx.stroke();
+    };
+
+    plotSeries(SCADA.hist.p1, "#38bdf8");
+    plotSeries(SCADA.hist.p2, "#f59e0b");
+    plotSeries(SCADA.hist.p3, "#10b981");
+  };
+
+  window.addEventListener("resize", () => {
+    drawTrend();
+  });
+
+  /*
+    V2 physics updates five times per second. The original telemetry loop
+    added a new trend point each time it ran, causing a 40-sample chart to
+    scroll through in roughly eight seconds. This wrapper preserves gauge and
+    SVG updates, but records chart history at a controlled one-second rate.
+  */
+  let lastTrendSampleTime = 0;
+
+  window.telemetryLoop = function () {
+    const now = Date.now();
+    const shouldRecordSample =
+      !SCADA.trendPaused &&
+      now - lastTrendSampleTime >= 1000;
+
+    const savedHistory = {
+      p1: [...SCADA.hist.p1],
+      p2: [...SCADA.hist.p2],
+      p3: [...SCADA.hist.p3],
+      p4: [...SCADA.hist.p4]
+    };
+
+    v2TelemetryLoop();
+
+    if (!shouldRecordSample || SCADA.trendPaused) {
+      SCADA.hist = savedHistory;
+    } else {
+      lastTrendSampleTime = now;
+    }
+
+    drawTrend();
+  };
+
+  function removeEquipment(svg, equipmentIds) {
+    equipmentIds.forEach((id) => {
+      svg.querySelectorAll(`[data-equip="${id}"]`).forEach((element) => {
+        element.remove();
+      });
+    });
+  }
+
+  function removePaths(svg, paths) {
+    const pathSet = new Set(paths);
+
+    svg.querySelectorAll("path").forEach((path) => {
+      if (pathSet.has(path.getAttribute("d"))) {
+        path.remove();
+      }
+    });
+  }
+
+  function addPipeline(svg, d, active, color, type = "FLUID") {
+    const marker =
+      type === "ELEC"
+        ? "arrow-yellow"
+        : color === "#f59e0b"
+          ? "arrow-amber"
+          : color === "#10b981"
+            ? "arrow-green"
+            : "arrow-cyan";
+
+    const animationClass =
+      type === "ELEC"
+        ? "pipe-elec"
+        : color === "#f59e0b"
+          ? "pipe-steam"
+          : active
+            ? "pipe-flowing"
+            : "";
+
+    svg.insertAdjacentHTML(
+      "beforeend",
+      `
+        <path d="${d}" fill="none" stroke="#0f172a" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"></path>
+        <path
+          d="${d}"
+          fill="none"
+          stroke="${color}"
+          stroke-width="5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="${active ? animationClass : ""}"
+          opacity="${active ? "1" : "0.28"}"
+          marker-end="${active ? `url(#${marker})` : ""}"
+        ></path>
+      `
+    );
+  }
+
+  /*
+    Equipment visibility matrix.
+
+    SIMPLE:
+      Core process only.
+
+    INTERMEDIATE:
+      Adds redundancy, secondary equipment, and normal process support systems.
+
+    ADVANCED:
+      Adds tie breakers, scrubbers, CIP, cooling towers, safety and fault
+      training equipment, plus the advanced operator controls.
+  */
+  function applyComplexityToSchematic() {
+    const svg = document.getElementById("pid-svg");
+    if (!svg || SCADA.scenario === "WATER") return;
+
+    const complexity = SCADA.cmp;
+    const scenario = SCADA.scenario;
+
+    if (scenario === "CHEM" && complexity === "SIMPLE") {
+      removeEquipment(svg, ["TK-B", "P-B"]);
+      removePaths(svg, [
+        "M660 176 H630",
+        "M590 176 H490"
+      ]);
+    }
+
+    if (scenario === "POWER") {
+      if (complexity === "SIMPLE") {
+        removeEquipment(svg, ["CB-F2", "CB-TIE", "LOAD-F2"]);
+        removePaths(svg, [
+          "M620 190 V285",
+          "M710 190 V285",
+          "M420 190 H710"
+        ]);
+
+        addPipeline(svg, "M420 190 H500", SCADA.P.cbM, "#eab308", "ELEC");
+      }
+
+      if (complexity === "INTERMEDIATE") {
+        removeEquipment(svg, ["CB-TIE"]);
+        removePaths(svg, [
+          "M710 190 V285",
+          "M420 190 H710"
+        ]);
+
+        addPipeline(svg, "M420 190 H620", SCADA.P.cbM, "#eab308", "ELEC");
+      }
+    }
+
+    if (scenario === "HVAC") {
+      if (complexity === "SIMPLE") {
+        removeEquipment(svg, ["CH-1", "P-CHW", "CT-101"]);
+        removePaths(svg, ["M125 330 H165"]);
+      }
+
+      if (complexity === "INTERMEDIATE") {
+        removeEquipment(svg, ["CT-101"]);
+        removePaths(svg, ["M125 330 H165"]);
+      }
+    }
+
+    if (scenario === "OIL" && complexity === "SIMPLE") {
+      removeEquipment(svg, ["P-BOOST"]);
+      removePaths(svg, ["M290 220 V310 H390 V220"]);
+    }
+
+    if (scenario === "FOOD") {
+      if (complexity !== "ADVANCED") {
+        removeEquipment(svg, ["TK-CIP", "P-CIP"]);
+        removePaths(svg, ["M345 165 V95 H590 V160"]);
+      }
+    }
+
+    if (scenario === "CLEAN") {
+      if (complexity === "SIMPLE") {
+        removeEquipment(svg, ["FFU-102", "SCRUBBER"]);
+        removePaths(svg, [
+          "M545 110 V150",
+          "M650 250 H735",
+          "M400 350 V390 H675"
+        ]);
+      }
+
+      if (complexity === "INTERMEDIATE") {
+        removeEquipment(svg, ["SCRUBBER"]);
+        removePaths(svg, [
+          "M650 250 H735",
+          "M400 350 V390 H675"
+        ]);
+      }
+    }
+
+    if (scenario === "DATA" && complexity === "SIMPLE") {
+      removeEquipment(svg, ["CRAC-2"]);
+      removePaths(svg, [
+        "M460 340 H640",
+        "M560 340 V285"
+      ]);
+    }
+  }
+
+  function removePanelsByTitle(titles) {
+    const pane = document.getElementById("left-controls");
+    if (!pane) return;
+
+    [...pane.children].forEach((panel) => {
+      const heading = panel.querySelector("h3");
+      if (!heading) return;
+
+      const headingText = heading.textContent.trim().toUpperCase();
+
+      if (titles.some((title) => headingText.includes(title))) {
+        panel.remove();
+      }
+    });
+  }
+
+  function applyComplexityToControls() {
+    if (SCADA.scenario === "WATER") return;
+
+    const scenario = SCADA.scenario;
+    const complexity = SCADA.cmp;
+
+    if (complexity === "SIMPLE") {
+      if (scenario === "CHEM") {
+        removePanelsByTitle(["REACTANT PUMP B"]);
+      }
+
+      if (scenario === "POWER") {
+        removePanelsByTitle(["FEEDER BREAKER 2", "BUS TIE"]);
+      }
+
+      if (scenario === "HVAC") {
+        removePanelsByTitle(["CHILLER", "CHW PUMP", "COOLING TOWER"]);
+      }
+
+      if (scenario === "OIL") {
+        removePanelsByTitle(["BOOSTER PUMP", "FAULT INJECTION"]);
+      }
+
+      if (scenario === "FOOD") {
+        removePanelsByTitle(["CIP PUMP"]);
+      }
+
+      if (scenario === "CLEAN") {
+        removePanelsByTitle(["FFU-102", "EXHAUST SCRUBBER", "FAULT INJECTION"]);
+      }
+
+      if (scenario === "DATA") {
+        removePanelsByTitle(["CRAC UNIT 2"]);
+      }
+    }
+
+    if (complexity === "INTERMEDIATE") {
+      if (scenario === "POWER") {
+        removePanelsByTitle(["BUS TIE"]);
+      }
+
+      if (scenario === "HVAC") {
+        removePanelsByTitle(["COOLING TOWER"]);
+      }
+
+      if (scenario === "FOOD") {
+        removePanelsByTitle(["CIP PUMP"]);
+      }
+
+      if (scenario === "CLEAN") {
+        removePanelsByTitle(["EXHAUST SCRUBBER", "FAULT INJECTION"]);
+      }
+    }
+  }
+
+  /*
+    Rendering wrappers ensure every scenario switch, complexity change, reset,
+    manual control command, or auto-control update applies the correct
+    complexity-specific graphic and control configuration.
+  */
+  window.renderSVG = function () {
+    v2RenderSVG();
+    applyComplexityToSchematic();
+  };
+
+  window.renderControls = function () {
+    v2RenderControls();
+    applyComplexityToControls();
+  };
+
+  /*
+    The original complexity selector already changes SCADA.cmp. This wrapper
+    additionally resets old trend data and immediately re-renders the
+    complexity-appropriate controls and schematic.
+  */
+  window.setComplexity = function (complexity) {
+    originalSetComplexity(complexity);
+
+    resetTrendHistory();
+    renderControls();
+    renderSVG();
+    telemetryLoop();
+
+    log("SYS", `Complexity topology updated to [${complexity}]`, "INFO");
+  };
+
+  /*
+    Scenario-specific trends must not retain normalized values from the prior
+    scenario. For example, a 13.8 kV power value must not be plotted against
+    a prior 0–5 NTU water-turbidity range.
+  */
+  window.switchScenario = function (scenario) {
+    originalSwitchScenario(scenario);
+
+    resetTrendHistory();
+    renderControls();
+    renderSVG();
+    telemetryLoop();
+  };
+
+  /*
+    AUTO mode owns equipment state. Any button or slider operation in V2
+    already transitions the trainer into MANUAL mode. This wrapper ensures
+    the displayed control panels immediately reflect either the automatic
+    state or the newly commanded manual state.
+  */
+  window.setControlMode = function (mode) {
+    originalSetControlMode(mode);
+
+    renderControls();
+    renderSVG();
+    telemetryLoop();
+  };
+
+  /*
+    Math and physics guardrails.
+
+    These bounds prevent invalid process states from propagating into gauges,
+    trends, SVG readouts, or automatic logic.
+  */
+  setInterval(() => {
+    if (SCADA.scenario === "WATER") return;
+
+    if (SCADA.scenario === "CHEM") {
+      SCADA.C.tkA = clamp(SCADA.C.tkA, 0, 100);
+      SCADA.C.tkB = clamp(SCADA.C.tkB, 0, 100);
+      SCADA.C.rx = clamp(SCADA.C.rx, 0, 100);
+      SCADA.C.tkProd = clamp(SCADA.C.tkProd, 0, 100);
+      SCADA.C.temp = clamp(SCADA.C.temp, 20, 165);
+      SCADA.C.press = clamp(SCADA.C.press, 0.8, 18);
+      SCADA.C.conversion = clamp(SCADA.C.conversion, 0, 100);
+      SCADA.C.coolingValve = clamp(SCADA.C.coolingValve, 0, 100);
+      SCADA.C.agitatorSpeed = clamp(SCADA.C.agitatorSpeed, 0, 100);
+    }
+
+    if (SCADA.scenario === "POWER") {
+      SCADA.P.demandMW = clamp(SCADA.P.demandMW, 0, 115);
+      SCADA.P.powerFactor = clamp(SCADA.P.powerFactor, 0.70, 1.00);
+      SCADA.P.tapPosition = clamp(SCADA.P.tapPosition, -10, 10);
+      SCADA.P.volt = clamp(SCADA.P.volt, 0, 15.5);
+      SCADA.P.freq = clamp(SCADA.P.freq, 57.5, 60.1);
+      SCADA.P.currentA = clamp(SCADA.P.currentA, 0, 8000);
+    }
+
+    if (SCADA.scenario === "HVAC") {
+      SCADA.H.sTemp = clamp(SCADA.H.sTemp, 52, 105);
+      SCADA.H.rh = clamp(SCADA.H.rh, 20, 85);
+      SCADA.H.flow = clamp(SCADA.H.flow, 0, 10000);
+      SCADA.H.d1 = clamp(SCADA.H.d1, 0, 100);
+      SCADA.H.coilCommand = clamp(SCADA.H.coilCommand, 0, 100);
+    }
+
+    if (SCADA.scenario === "OIL") {
+      SCADA.O.press = clamp(SCADA.O.press, 30, 800);
+      SCADA.O.flow = clamp(SCADA.O.flow, 0, 1200);
+      SCADA.O.v1 = clamp(SCADA.O.v1, 0, 100);
+      SCADA.O.esd = clamp(SCADA.O.esd, 0, 100);
+      SCADA.O.vib = clamp(SCADA.O.vib, 0.05, 2.5);
+      SCADA.O.leakRate = clamp(SCADA.O.leakRate, 0, 500);
+    }
+
+    if (SCADA.scenario === "FOOD") {
+      SCADA.F.temp = clamp(SCADA.F.temp, 18, 102);
+      SCADA.F.tkProd = clamp(SCADA.F.tkProd, 0, 100);
+      SCADA.F.tkCIP = clamp(SCADA.F.tkCIP, 0, 100);
+      SCADA.F.lethalityIndex = clamp(SCADA.F.lethalityIndex, 0, 99);
+      SCADA.F.qualityIndex = clamp(SCADA.F.qualityIndex, 60, 100);
+    }
+
+    if (SCADA.scenario === "CLEAN") {
+      SCADA.CL.part = clamp(SCADA.CL.part, 5, 50000);
+      SCADA.CL.diff = clamp(SCADA.CL.diff, -30, 120);
+      SCADA.CL.rh = clamp(SCADA.CL.rh, 25, 68);
+      SCADA.CL.temp = clamp(SCADA.CL.temp, 60, 82);
+    }
+
+    if (SCADA.scenario === "DATA") {
+      SCADA.D.itLoadKW = clamp(SCADA.D.itLoadKW, 0, 2000);
+      SCADA.D.sTemp = clamp(SCADA.D.sTemp, 55, 115);
+      SCADA.D.returnTemp = clamp(SCADA.D.returnTemp, 60, 145);
+      SCADA.D.coolingCommand = clamp(SCADA.D.coolingCommand, 0, 100);
+      SCADA.D.batSoC = clamp(SCADA.D.batSoC, 0, 100);
+    }
+  }, 200);
+
+  resetTrendHistory();
+})();
+</script>
+<style>
+  /*
+    V4 — Prevent the center schematic/trend stack from exceeding the viewport.
+    The application body remains fixed; MAIN becomes the intentional scroll area.
+  */
+  html,
+  body {
+    height: 100%;
+    min-height: 100%;
+  }
+
+  body {
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  main {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    max-height: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
+  main > section {
+    min-height: 0;
+  }
+
+  /*
+    Center column:
+    schematic consumes remaining vertical space;
+    telemetry trend remains fixed at 14rem / Tailwind h-56.
+  */
+  @media (min-width: 1024px) {
+    main > section:nth-of-type(2) {
+      min-height: 0 !important;
+      height: 100% !important;
+      overflow: hidden !important;
+    }
+
+    main > section:nth-of-type(2) > .panel-bezel:first-child {
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+    }
+
+    main > section:nth-of-type(2) > .panel-bezel:last-child {
+      flex: 0 0 14rem !important;
+      height: 14rem !important;
+      min-height: 14rem !important;
+      max-height: 14rem !important;
+      overflow: hidden !important;
+    }
+
+    #svg-container {
+      min-height: 0 !important;
+      height: auto !important;
+      overflow: hidden !important;
+    }
+  }
+
+  /*
+    Keep the chart contained inside its inset panel.
+  */
+  #trend-canvas {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+  }
+
+  #trend-canvas,
+  #trend-canvas * {
+    box-sizing: border-box;
+  }
+</style>
+<script>
+  /*
+    Recalculate the trend canvas after browser resize, scenario changes,
+    complexity changes, panel resizing, or viewport-height changes.
+  */
+  (() => {
+    const canvas = document.getElementById("trend-canvas");
+    const trendPanel = canvas ? canvas.closest(".panel-bezel") : null;
+
+    if (!trendPanel || typeof ResizeObserver === "undefined") return;
+
+    let resizeFrame = null;
+
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(resizeFrame);
+
+      resizeFrame = requestAnimationFrame(() => {
+        if (typeof drawTrend === "function") {
+          drawTrend();
+        }
+      });
+    });
+
+    observer.observe(trendPanel);
+  })();
+</script>
+</body>
+</html>
